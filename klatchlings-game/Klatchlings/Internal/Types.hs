@@ -93,7 +93,7 @@ type Stack = [Header]
 data Header
   = Assigned CardID Guard [(Change, Target)]
   | Unassigned CardID Guard Targets Changes
-  | Targeted CardID CardID Guard [Change]
+  | Targeted CardID Guard [(Change, CardID)]
 
 -- History related things
 newtype History = History

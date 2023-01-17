@@ -15,6 +15,7 @@ module Card
   , headers
   , collectTriggered
   , targetChanges
+  , applyChange
   ) where
 
 import Internal.Fields
@@ -122,3 +123,11 @@ targetChanges gs cID chngs trgts = foldr getChange [] $ getTargets trgts cID gs
       = case Map.lookup tID chngs of
           Nothing -> acc
           (Just chng) -> (:) (chng, trgt) acc
+
+applyChange :: Change -> CardID -> Cards -> Maybe (Alteration, Cards)
+applyChange chng tcID crds
+  = case Map.lookup tcID crds of
+      Nothing -> Nothing
+      (Just crd) ->
+        let (crd', alt) = change chng crd
+         in Just (alt, Map.insert tcID crd' crds)
