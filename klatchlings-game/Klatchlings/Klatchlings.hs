@@ -1,6 +1,6 @@
 module Klatchlings where
 
-import Internal.Card
+import Card
 import Internal.Fields
 import Internal.Types
 
