@@ -1,10 +1,26 @@
 module Klatchlings where
 
-import Card
-import Internal.Fields
-import Internal.Types
-import Internal.Comms
-import Internal.Engine
+import Game
+import GameState -- not used just to load when we compile
+
+import Control.Concurrent.Chan
+import Control.Concurrent (forkIO)
+
+harness :: Chan String -> IO ()
+harness ch = do
+  contents <- readChan ch
+  putStrLn contents
+  response <- getLine
+  writeChan ch response
+  harness ch
+
+runGame :: Chan String -> IO ()
+runGame ch = do
+  g' <- startGame ch
+  putStrLn "game finished.."
 
 main :: IO ()
-main = undefined
+main = do
+  ch <- newChan
+  forkIO (runGame ch)
+  harness ch
