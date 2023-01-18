@@ -18,19 +18,20 @@ module Card
   , applyChange
   ) where
 
-import Internal.Fields
+import Fields (Field(..), Stat, Attr)
 import Internal.Types
+import Internal.Misc (getNextKey)
 
 import qualified Data.Map as Map
   ( Map, empty, adjust
   , insert, lookup
-  , keys
+  , keys, toList
   , foldrWithKey
   , union, map
   )
 
 blank :: Card
-blank = Card Map.empty Map.empty [] Nothing
+blank = Card Map.empty Map.empty Map.empty Nothing
 
 mint :: Card -> Card
 mint (Card ats sts abs _) = crd . Just . crd $ Nothing
@@ -72,12 +73,9 @@ replace stt f = Change $ \(Card ats sts abs oc) ->
 
 equip :: Ability -> Change
 equip ablty = Change $ \(Card ats sts abs oc) ->
-  let abs' = ablty : abs
+  let abs' = Map.insert aID ablty abs
+      aID = AbilityID . getNextKey abilityID $ abs
    in (Card ats sts abs' oc,  Equip)
-
-maximum' :: [Int] -> Int
-maximum' [] = 0
-maximum' xs = maximum xs
 
 
 -- Functions for internal use
@@ -105,15 +103,16 @@ headers gs = Map.foldrWithKey f []
 
 collectTriggered :: GameState -> CardID -> Card -> [Header]
 collectTriggered gs cID
-  = foldr (toHeader gs cID) [] . filter (triggered gs cID) . abilities
+  = foldr (toHeader gs cID) [] . filter (triggered gs cID)
+  . Map.toList . abilities
     where
-      triggered :: GameState -> CardID -> Ability -> Bool
-      triggered gs cID (Ability _ trg _ _ _) = trigger trg cID gs
+      triggered :: GameState -> CardID -> (AbilityID, Ability) -> Bool
+      triggered gs cID (_, Ability _ trg _ _ _) = trigger trg cID gs
 
-      toHeader :: GameState -> CardID -> Ability -> [Header] -> [Header]
-      toHeader gs cID (Ability tmg trg grd trgts chngs)
-        | tmg == OnResolve = (:) (Unassigned cID grd trgts chngs)
-        | tmg == OnTrigger = (:) (Assigned cID grd
+      toHeader :: GameState -> CardID -> (AbilityID, Ability) -> [Header] -> [Header]
+      toHeader gs cID (aID, Ability tmg trg grd trgts chngs)
+        | tmg == OnResolve = (:) (Unassigned cID aID grd trgts chngs)
+        | tmg == OnTrigger = (:) (Assigned cID aID grd
                                   $ targetChanges gs cID chngs trgts)
 
 targetChanges :: GameState -> CardID -> Changes -> Targets -> [(Change, Target)]

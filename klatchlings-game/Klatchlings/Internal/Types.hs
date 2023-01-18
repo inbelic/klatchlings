@@ -1,6 +1,6 @@
 module Internal.Types where
 
-import Internal.Fields
+import Fields (Field, Attr, Stat)
 
 import qualified Data.Map as Map (Map)
 
@@ -8,7 +8,7 @@ import qualified Data.Map as Map (Map)
 data Card = Card
   { attrs       :: AttrMap
   , stats       :: StatMap
-  , abilities   :: [Ability]
+  , abilities   :: AbilityMap
   , original    :: Maybe Card
   }
 
@@ -28,6 +28,9 @@ newtype CardID = CardID
   { cardID :: Int
   }
   deriving (Eq, Ord)
+
+instance Show CardID where
+  show (CardID cID) = show cID
 
 type AttrMap = Map.Map Attr Int
 type AttrState = Map.Map CardID AttrMap
@@ -50,6 +53,15 @@ instance Semigroup Status where
 
 
 -- Ability related things
+newtype AbilityID = AbilityID
+  { abilityID :: Int
+  }
+  deriving (Eq, Ord)
+
+instance Show AbilityID where
+  show (AbilityID aID) = show aID
+
+type AbilityMap = Map.Map AbilityID Ability
 data Ability = Ability Timing Trigger Guard Targets Changes
 
 newtype Trigger = Trigger
@@ -90,10 +102,27 @@ data GameState = GS Stack History CardState
 
 type Stack = [Header]
 
+type Resolves = [(Change, Maybe CardID)]
+
 data Header
-  = Assigned CardID Guard [(Change, Target)]
-  | Unassigned CardID Guard Targets Changes
-  | Targeted CardID Guard [(Change, CardID)]
+  = Assigned CardID AbilityID Guard [(Change, Target)]
+  | Unassigned CardID AbilityID Guard Targets Changes
+  | Targeted CardID AbilityID Guard Resolves 
+
+instance Show Header where
+  show (Assigned cID aID _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"
+  show (Unassigned cID aID _ _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"
+  show (Targeted cID aID _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"
+
+instance Eq Header where
+  (==) (Assigned cID1 aID1 _ _) (Assigned cID2 aID2 _ _)
+    = cID1 == cID2 && aID1 == aID2
+  (==) (Unassigned cID1 aID1 _ _ _) (Unassigned cID2 aID2 _ _ _)
+    = cID1 == cID2 && aID1 == aID2
+  (==) (Targeted cID1 aID1 _ _) (Targeted cID2 aID2 _ _)
+    = cID1 == cID2 && aID1 == aID2
+  (==) _ _ = False
+
 
 -- History related things
 newtype History = History

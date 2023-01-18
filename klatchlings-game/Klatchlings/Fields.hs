@@ -1,4 +1,4 @@
-module Internal.Fields where
+module Fields where
 
 data Field
   = Attr Attr
