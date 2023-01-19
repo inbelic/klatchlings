@@ -4,6 +4,8 @@ module Guard
   , oneOf
   , emptyStack
   , inZone
+  , alwaysOk
+  , isRulesCard
   ) where
 
 import Internal.Boolean
@@ -28,3 +30,11 @@ emptyStack = Guard $ \_ _ -> null . getStack
 inZone :: Zone -> Guard
 inZone z = Guard $ \_ tcID ->
   (==) z . toEnum . retreive tcID (Attr Zone) . getCS
+
+alwaysOk :: Guard
+alwaysOk = Guard $ \_ _ _ -> True
+
+isRulesCard :: Guard
+isRulesCard = Guard grd
+  where grd _ (CardID 0) _ = True
+        grd _ _ _ = False

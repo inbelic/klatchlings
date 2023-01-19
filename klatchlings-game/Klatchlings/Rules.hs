@@ -19,16 +19,21 @@ cards = Map.fromList
 dummyUnit :: Owner -> Card
 dummyUnit owner
   = mint
-  . silently (set Owner (fromEnum owner))
-  . silently (set Zone (fromEnum MidDeck))
+  . fst . set Owner (fromEnum owner)
+  . fst . set Zone (fromEnum MidDeck)
   $ blank
 
 rules :: (CardID, Card)
 rules = (CardID 0, crd)
   where crd = mint
-            . silently (equip morningPhase)
-            . silently (equip phaseControl)
-            . silently (set Phase (fromEnum Start))
+            . fst . equip setActive
+            . fst . (equip $ play Retaliate)
+            . fst . (equip $ play Seige)
+            . fst . equip morningPhase
+            . fst . equip phaseControl
+            . fst . set Phase (fromEnum Start)
+            . fst . set ActiveFlag 0
+            . fst . set AttackFlag 0
             $ blank
 
 
@@ -51,3 +56,25 @@ morningPhase = Ability OnResolve trg grd trgts rslvs
 
     trgts = convert [0, 0] . combine (toDraw P1) $ (toDraw P2)
     rslvs = Map.fromList [(TID 0, independent $ set Zone (fromEnum Hand))]
+
+play :: Phase -> Ability
+play p = Ability OnResolve trg grd trgts rslvs
+  where
+    trg = both clearStack . both clearCurrent . both activeSet $ inPhase p 
+    grd = oneOf isRulesCard $ inZone Hand
+
+    trgts = convert [0] (validPlays p)
+    rslvs = Map.fromList
+            [(TID 0, orSetUnactive . independent $ set Zone (fromEnum Stack))]
+
+setActive :: Ability
+setActive = Ability OnTrigger trg grd trgts rslvs
+  where
+    trg = oneOf (enteredPhase Seige)
+        . oneOf (enteredPhase Retaliate)
+        $ (enteredPhase Nominate)
+
+    grd = alwaysOk
+    
+    trgts = targetRuleCard . Map.keys $ rslvs
+    rslvs = Map.fromList [(TID 0, independent $ set ActiveFlag 1)]

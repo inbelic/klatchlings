@@ -1,7 +1,7 @@
 module Card
   ( Card
   , Cards
-  , Change(..)
+  , Change
   , Alteration(..)
   , blank
   , mint
@@ -10,13 +10,12 @@ module Card
   , set
   , replace
   , equip
-  , silently
   -- Internal Usage
   , view
   , headers
   , collectTriggered
   , targetResolves
-  , applyChange
+  , applyResolve
   ) where
 
 import Fields (Field(..), Stat, Attr)
@@ -46,8 +45,8 @@ reload (Card _ _ _ (Just oc)) = Card ats sts abs (Just oc)
 -- Note: if the field is not set then it will silently not do anything.
 -- FIXME: is this an issue?
 shift :: Field -> Int -> Change
-shift (Attr atr) x = Change $ shiftAttr atr x
-shift (Stat stt) x = Change $ shiftStat stt x
+shift (Attr atr) x = shiftAttr atr x
+shift (Stat stt) x = shiftStat stt x
 
 shiftAttr :: Attr -> Int -> Card -> (Card, Alteration)
 shiftAttr atr x (Card ats sts abs oc)
@@ -61,25 +60,19 @@ shiftStat stt x (Card ats sts abs oc)
           f = Status $ const (+ x)
 
 set :: Attr -> Int -> Change
-set atr x = Change $ \(Card ats sts abs oc) ->
-  let ats' = Map.insert atr x ats
-   in (Card ats' sts abs oc, Set atr x)
+set atr x (Card ats sts abs oc) = (Card ats' sts abs oc, Set atr x)
+  where ats' = Map.insert atr x ats
 
 replace :: Stat -> Status -> Change
-replace stt f = Change $ \(Card ats sts abs oc) ->
-  let sts' = case Map.lookup stt sts of
+replace stt f (Card ats sts abs oc) = (Card ats sts' abs oc, Replace stt)
+  where sts' = case Map.lookup stt sts of
                Nothing -> Map.insert stt f sts
                (Just g) -> Map.insert stt (f <> g) sts
-   in (Card ats sts' abs oc, Replace stt)
 
 equip :: Ability -> Change
-equip ablty = Change $ \(Card ats sts abs oc) ->
-  let abs' = Map.insert aID ablty abs
-      aID = AbilityID . getNextKey abilityID $ abs
-   in (Card ats sts abs' oc,  Equip)
-
-silently :: Change -> (Card -> Card)
-silently (Change chng) = fst . chng
+equip ablty (Card ats sts abs oc) = (Card ats sts abs' oc,  Equip)
+  where abs' = Map.insert aID ablty abs
+        aID = AbilityID . getNextKey abilityID $ abs
 
 -- Functions for internal use
 view :: Cards -> CardState
@@ -118,20 +111,20 @@ collectTriggered gs cID
         | tmg == OnTrigger = (:) (Assigned cID aID grd
                                   $ targetResolves gs cID rslvs trgts)
 
-targetResolves :: GameState -> CardID -> Resolves -> Targets -> [(Change, Target)]
-targetResolves gs cID rslvs trgts = foldr getChange [] $ getTargets trgts cID gs
+targetResolves :: GameState -> CardID -> Resolves -> Targets -> [(Resolve, Target)]
+targetResolves gs cID rslvs trgts = foldr getResolve [] $ getTargets trgts cID gs
   where
-    getChange (tID, trgt) acc
+    getResolve (tID, trgt) acc
       = case Map.lookup tID rslvs of
           Nothing -> acc
-          (Just rslv) -> (:) (resolve rslv cID gs, trgt) acc
+          (Just rslv) -> (:) (rslv, trgt) acc
 
-applyChange :: Change -> CardID -> Cards -> (Alteration, Cards)
-applyChange chng tcID crds
+applyResolve :: Resolve -> CardID -> CardID -> GameState -> Cards -> (Alteration, Cards)
+applyResolve rslv cID tcID gs crds
   = case Map.lookup tcID crds of
       Nothing ->
-        let (crd', alt) = change chng blank
+        let (crd', alt) = resolve rslv cID tcID gs blank
          in (alt, Map.insert tcID crd' crds)
       (Just crd) ->
-        let (crd', alt) = change chng crd
+        let (crd', alt) = resolve rslv cID tcID gs crd
          in (alt, Map.insert tcID crd' crds)

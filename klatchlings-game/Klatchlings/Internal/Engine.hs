@@ -1,6 +1,6 @@
 module Internal.Engine where
 
-import Card (view, headers, applyChange, targetResolves)
+import Card (view, headers, applyResolve, targetResolves)
 import GameState (peek)
 import History (write, current, record)
 import Internal.Types
@@ -31,23 +31,23 @@ resolveTrigger _ ch (Game (hdr : stck') hist crds)
           (Unassigned cID aID grd trgts rslvs) ->
             resolveUnassigned cID aID grd trgts rslvs ch game'
 
-resolveTargeted :: CardID -> AbilityID -> Guard -> [(Change, Maybe CardID)] -> Comm Game
+resolveTargeted :: CardID -> AbilityID -> Guard -> [(Resolve, Maybe CardID)] -> Comm Game
 resolveTargeted cID aID grd trgts ch g@(Game stck hist crds)
   = resolveStack ch . Game stck hist' $ crds'
     where
       gs = peek g
-      (hist', crds') = foldr (resolveChange cID aID gs grd . fillVoid crds)
+      (hist', crds') = foldr (resolveResolve cID aID gs grd . fillVoid crds)
                         (hist, crds) trgts
-      fillVoid :: Cards -> (Change, Maybe CardID) -> (Change, CardID)
-      fillVoid _ (chng, Just cID) = (chng, cID)
-      fillVoid crds (chng, Nothing) = (chng, CardID . getNextKey cardID $ crds)
+      fillVoid :: Cards -> (Resolve, Maybe CardID) -> (Resolve, CardID)
+      fillVoid _ (rslv, Just cID) = (rslv, cID)
+      fillVoid crds (rslv, Nothing) = (rslv, CardID . getNextKey cardID $ crds)
 
-resolveChange :: CardID -> AbilityID -> GameState -> Guard -> (Change, CardID)
-                  -> (History, Cards) -> (History, Cards)
-resolveChange cID aID gs grd (chng, tcID) (hist, crds)
+resolveResolve :: CardID -> AbilityID -> GameState -> Guard -> (Resolve, CardID)
+            -> (History, Cards) -> (History, Cards)
+resolveResolve cID aID gs grd (rslv, tcID) (hist, crds)
   | not $ guard grd cID tcID gs = (hist, crds)
   | otherwise =
-    let (alt, crds') = applyChange chng tcID crds
+    let (alt, crds') = applyResolve rslv cID tcID gs crds
         pg = Page cID tcID alt
      in (record pg hist, crds')
 

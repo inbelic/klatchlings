@@ -4,6 +4,7 @@ import Internal.Types
   ( Header(..)
   , Target(..)
   , Change
+  , Resolve(..)
   , Resolves
   , CardID (..)
   )
@@ -16,6 +17,7 @@ import Control.Concurrent.Chan (Chan, readChan, writeChan)
 type Comm a = Chan String -> a -> IO a
 
 requestReorder :: Comm [Header]
+requestReorder _ [] = return []
 requestReorder ch hdrs = do
   writeChan ch . (++) "ordr: " . show $ hdrs
   response <- readChan ch
@@ -48,24 +50,24 @@ requestTargets ch hdr@(Assigned cID aID grd trgts)
 requestTargets _ hdr = return hdr
 
 
-requestTarget :: Chan String -> Header -> (Change, Target)
-                  -> [(Change, Maybe CardID)] -> IO [(Change, Maybe CardID)]
-requestTarget ch hdr (chng, trgt) acc
+requestTarget :: Chan String -> Header -> (Resolve, Target)
+                  -> [(Resolve, Maybe CardID)] -> IO [(Resolve, Maybe CardID)]
+requestTarget ch hdr (rslv, trgt) acc
   = case trgt of
-      Void -> return $ (chng, Nothing) : acc
-      (Given cID) -> return $ (chng, Just cID) : acc
+      Void -> return $ (rslv, Nothing) : acc
+      (Given cID) -> return $ (rslv, Just cID) : acc
       (Inquire rng) -> do
         writeChan ch . (++) "trgt: " $ show hdr ++ " " ++ show rng
         response <- readChan ch
         case validTarget rng =<< readMaybe response of
-          Nothing -> requestTarget ch hdr (chng, trgt) acc
-          (Just cID) -> return $ (chng, Just . CardID $ cID) : acc
+          Nothing -> requestTarget ch hdr (rslv, trgt) acc
+          (Just cID) -> return $ (rslv, Just . CardID $ cID) : acc
       (Random rng) -> do
         writeChan ch . (++) "rand: " $ show hdr ++ " " ++ show rng
         response <- readChan ch
         case validTarget rng =<< readMaybe response of
-          Nothing -> requestTarget ch hdr (chng, trgt) acc
-          (Just cID) -> return $ (chng, Just . CardID $ cID) : acc
+          Nothing -> requestTarget ch hdr (rslv, trgt) acc
+          (Just cID) -> return $ (rslv, Just . CardID $ cID) : acc
 
 validTarget :: [CardID] -> Int -> Maybe Int
 validTarget xs x = case elem x . map cardID $ xs of

@@ -14,9 +14,7 @@ data Card = Card
 
 type Cards = Map.Map CardID Card
 
-newtype Change = Change
-  { change :: Card -> (Card, Alteration)
-  }
+type Change = Card -> (Card, Alteration)
 
 data Alteration
   = Shift Field Int     -- We shifted the Field value by Int
@@ -109,13 +107,13 @@ data GameState = GameState
 type Stack = [Header]
 
 newtype Resolve = Resolve
-  { resolve :: CardID -> GameState -> Change
+  { resolve :: CardID -> CardID -> GameState -> Change
   }
 
 data Header
-  = Assigned CardID AbilityID Guard [(Change, Target)]
+  = Assigned CardID AbilityID Guard [(Resolve, Target)]
   | Unassigned CardID AbilityID Guard Targets Resolves
-  | Targeted CardID AbilityID Guard [(Change, Maybe CardID)]
+  | Targeted CardID AbilityID Guard [(Resolve, Maybe CardID)]
 
 instance Show Header where
   show (Assigned cID aID _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"

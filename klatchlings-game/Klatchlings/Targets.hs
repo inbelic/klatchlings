@@ -10,6 +10,7 @@ module Targets
   , targetRuleCard
   , toTargets
   , toDraw
+  , validPlays
   ) where
 
 import Internal.Types
@@ -44,7 +45,7 @@ toTargets :: Targeting -> Targets
 toTargets f = Targets $ \cID gs -> zip (map TID [0..]) . f cID $ gs
 
 toDraw :: Owner -> Targeting
-toDraw owner cID gs
+toDraw owner _ gs
   = let owned = refine (Attr Owner) ((==) owner . toEnum)
               $ getCS $ gs
         topDeck = within 
@@ -61,3 +62,19 @@ toDraw owner cID gs
           ([], [], xs) -> [Given $ head xs]
           ([], xs, _) -> [Random $ xs]
           (xs, _, _) -> [Given $ head xs]
+
+validPlays :: Phase -> Targeting
+validPlays p _ gs
+  = let active = case (p, retreive (CardID 0) (Attr AttackFlag) . getCS $ gs) of
+                   (Seige, 0) -> P1
+                   (Seige, 1) -> P2
+                   (Retaliate, 0) -> P2
+                   (Retaliate, 1) -> P1
+                   _ -> undefined
+        hand = within
+             . refine (Attr Owner) ((==) active . toEnum)
+             . refine (Attr Zone) ((==) Hand . toEnum)
+             . getCS $ gs
+     in case hand of
+          [] -> [Given . CardID $ 0]
+          xs -> [Inquire . (:) (CardID 0) $ xs]

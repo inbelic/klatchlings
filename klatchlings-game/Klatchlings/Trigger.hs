@@ -5,6 +5,8 @@ module Trigger
   , clearStack
   , clearCurrent
   , enteredPhase
+  , inPhase
+  , activeSet
   ) where
 
 import History
@@ -34,3 +36,11 @@ enteredPhase :: Phase -> Trigger
 enteredPhase p = Trigger $ \_ -> any f . current . getHistory
   where f (Page _ (CardID 0) (Set Phase cp)) = (==) cp . fromEnum $ p
         f _ = False
+
+inPhase :: Phase -> Trigger
+inPhase p = Trigger $ \_ ->
+  (==) p . toEnum . retreive (CardID 0) (Attr Phase) . getCS
+
+activeSet :: Trigger
+activeSet = Trigger $ \_ ->
+  (/=) 0 . retreive (CardID 0) (Attr ActiveFlag) . getCS
