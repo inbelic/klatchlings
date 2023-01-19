@@ -23,6 +23,7 @@ data Alteration
   | Set Attr Int        -- We set an Attr to a value Int
   | Replace Stat        -- We modified the Status of a Stat
   | Equip               -- We gave the card an ability
+  deriving Show
 
 newtype CardID = CardID
   { cardID :: Int
@@ -53,6 +54,8 @@ instance Semigroup Status where
 
 
 -- Ability related things
+data Ability = Ability Timing Trigger Guard Targets Resolves
+
 newtype AbilityID = AbilityID
   { abilityID :: Int
   }
@@ -62,7 +65,6 @@ instance Show AbilityID where
   show (AbilityID aID) = show aID
 
 type AbilityMap = Map.Map AbilityID Ability
-data Ability = Ability Timing Trigger Guard Targets Changes
 
 newtype Trigger = Trigger
   { trigger :: CardID -> GameState -> Bool
@@ -77,15 +79,15 @@ newtype Targets = Targets
   { getTargets :: CardID -> GameState -> TargetMap
   }
 
-newtype TargetID = TargetID
+newtype TargetID = TID
   { targetID :: Int
   }
   deriving (Eq, Ord)
 
 type TargetMap = [(TargetID, Target)]
-type Changes = Map.Map TargetID Change
+type Resolves = Map.Map TargetID Resolve
 
-newtype Guard = Gurad
+newtype Guard = Guard
   { guard :: CardID -> CardID -> GameState -> Bool
   }
 
@@ -98,16 +100,22 @@ data Target
   deriving (Eq, Ord)
 
 data Game = Game Stack History Cards
-data GameState = GS Stack History CardState
+data GameState = GameState
+  { getStack    :: Stack
+  , getHistory  :: History
+  , getCS       :: CardState
+  }
 
 type Stack = [Header]
 
-type Resolves = [(Change, Maybe CardID)]
+newtype Resolve = Resolve
+  { resolve :: CardID -> GameState -> Change
+  }
 
 data Header
   = Assigned CardID AbilityID Guard [(Change, Target)]
-  | Unassigned CardID AbilityID Guard Targets Changes
-  | Targeted CardID AbilityID Guard Resolves 
+  | Unassigned CardID AbilityID Guard Targets Resolves
+  | Targeted CardID AbilityID Guard [(Change, Maybe CardID)]
 
 instance Show Header where
   show (Assigned cID aID _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"
@@ -130,3 +138,4 @@ newtype History = History
   }
 
 data Page = Page CardID CardID Alteration
+  deriving Show

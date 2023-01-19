@@ -11,4 +11,3 @@ import Control.Concurrent.Chan
 
 startGame :: Chan String -> IO Game
 startGame ch = resolveStack ch $ Game [] begin cards
-

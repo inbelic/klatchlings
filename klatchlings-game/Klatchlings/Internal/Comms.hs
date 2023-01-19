@@ -28,7 +28,7 @@ requestReorder ch hdrs = do
 reorder :: [a] -> [Int] -> Maybe [a]
 reorder elems idxs
   | uniqueSpan idxs && (length idxs == length elems)
-    = Just $ foldr (reorder' elems) [] idxs
+    = Just . foldr (reorder' elems) [] . map (flip (-) 1) $ idxs
   | otherwise = Nothing
 
 reorder' :: [a] -> Int -> [a] -> [a]
@@ -49,7 +49,7 @@ requestTargets _ hdr = return hdr
 
 
 requestTarget :: Chan String -> Header -> (Change, Target)
-                  -> Resolves -> IO Resolves
+                  -> [(Change, Maybe CardID)] -> IO [(Change, Maybe CardID)]
 requestTarget ch hdr (chng, trgt) acc
   = case trgt of
       Void -> return $ (chng, Nothing) : acc

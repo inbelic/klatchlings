@@ -1,5 +1,6 @@
 module History
   ( History
+  , show
   , begin
   , current
   , previous
@@ -9,6 +10,9 @@ module History
   ) where
 
 import Internal.Types(History(..), Page)
+
+instance Show History where
+  show (History (cur, past)) = show cur ++ show past
 
 begin :: History
 begin = History ([], [])

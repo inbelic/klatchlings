@@ -4,7 +4,6 @@ module Ability
   , module Trigger
   , module Guard
   , module Targets
-  , module Changes
   ) where
 
 import Internal.Types
@@ -15,4 +14,3 @@ import Internal.Types
 import Trigger 
 import Guard
 import Targets
-import Changes

@@ -1,17 +1,15 @@
 module Internal.Engine where
 
-import Card (view, headers, applyChange, targetChanges)
+import Card (view, headers, applyChange, targetResolves)
+import GameState (peek)
 import History (write, current, record)
 import Internal.Types
 import Internal.Comms (Comm, requestReorder, requestTargets)
 import Internal.Misc (getNextKey)
 
-peek :: Game -> GameState
-peek (Game stck hist crds)
-  = GS stck hist . view $ crds
-
 resolveStack :: Comm Game
 resolveStack ch g@(Game stck hist crds) = do
+  putStrLn . show $ hist
   let gs = peek g
       hdrs = headers gs crds
   hdrs' <- (=<<) (sequence . map (requestTargets ch))
@@ -30,10 +28,10 @@ resolveTrigger _ ch (Game (hdr : stck') hist crds)
      in case hdr of
           (Targeted cID aID grd trgts) ->
             resolveTargeted cID aID grd trgts ch game'
-          (Unassigned cID aID grd trgts chngs) ->
-            resolveUnassigned cID aID grd trgts chngs ch game'
+          (Unassigned cID aID grd trgts rslvs) ->
+            resolveUnassigned cID aID grd trgts rslvs ch game'
 
-resolveTargeted :: CardID -> AbilityID -> Guard -> Resolves -> Comm Game
+resolveTargeted :: CardID -> AbilityID -> Guard -> [(Change, Maybe CardID)] -> Comm Game
 resolveTargeted cID aID grd trgts ch g@(Game stck hist crds)
   = resolveStack ch . Game stck hist' $ crds'
     where
@@ -48,15 +46,14 @@ resolveChange :: CardID -> AbilityID -> GameState -> Guard -> (Change, CardID)
                   -> (History, Cards) -> (History, Cards)
 resolveChange cID aID gs grd (chng, tcID) (hist, crds)
   | not $ guard grd cID tcID gs = (hist, crds)
-  | otherwise = case applyChange chng tcID crds of
-                  Nothing -> (hist, crds)
-                  (Just (alt, crds')) ->
-                    let pg = Page cID tcID alt
-                     in (record pg hist, crds')
+  | otherwise =
+    let (alt, crds') = applyChange chng tcID crds
+        pg = Page cID tcID alt
+     in (record pg hist, crds')
 
-resolveUnassigned :: CardID -> AbilityID -> Guard -> Targets -> Changes
+resolveUnassigned :: CardID -> AbilityID -> Guard -> Targets -> Resolves
                       -> Comm Game
-resolveUnassigned cID aID grd trgts chngs ch game@(Game stck hist crds) = do
+resolveUnassigned cID aID grd trgts rslvs ch game@(Game stck hist crds) = do
   hdr' <- requestTargets ch . Assigned cID aID grd
-        . targetChanges (peek game) cID chngs $ trgts
+        . targetResolves (peek game) cID rslvs $ trgts
   resolveTrigger False ch (Game (hdr' : stck) hist crds)

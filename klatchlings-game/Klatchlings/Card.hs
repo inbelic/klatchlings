@@ -10,11 +10,12 @@ module Card
   , set
   , replace
   , equip
+  , silently
   -- Internal Usage
   , view
   , headers
   , collectTriggered
-  , targetChanges
+  , targetResolves
   , applyChange
   ) where
 
@@ -77,6 +78,8 @@ equip ablty = Change $ \(Card ats sts abs oc) ->
       aID = AbilityID . getNextKey abilityID $ abs
    in (Card ats sts abs' oc,  Equip)
 
+silently :: Change -> (Card -> Card)
+silently (Change chng) = fst . chng
 
 -- Functions for internal use
 view :: Cards -> CardState
@@ -110,23 +113,25 @@ collectTriggered gs cID
       triggered gs cID (_, Ability _ trg _ _ _) = trigger trg cID gs
 
       toHeader :: GameState -> CardID -> (AbilityID, Ability) -> [Header] -> [Header]
-      toHeader gs cID (aID, Ability tmg trg grd trgts chngs)
-        | tmg == OnResolve = (:) (Unassigned cID aID grd trgts chngs)
+      toHeader gs cID (aID, Ability tmg trg grd trgts rslvs)
+        | tmg == OnResolve = (:) (Unassigned cID aID grd trgts rslvs)
         | tmg == OnTrigger = (:) (Assigned cID aID grd
-                                  $ targetChanges gs cID chngs trgts)
+                                  $ targetResolves gs cID rslvs trgts)
 
-targetChanges :: GameState -> CardID -> Changes -> Targets -> [(Change, Target)]
-targetChanges gs cID chngs trgts = foldr getChange [] $ getTargets trgts cID gs
+targetResolves :: GameState -> CardID -> Resolves -> Targets -> [(Change, Target)]
+targetResolves gs cID rslvs trgts = foldr getChange [] $ getTargets trgts cID gs
   where
     getChange (tID, trgt) acc
-      = case Map.lookup tID chngs of
+      = case Map.lookup tID rslvs of
           Nothing -> acc
-          (Just chng) -> (:) (chng, trgt) acc
+          (Just rslv) -> (:) (resolve rslv cID gs, trgt) acc
 
-applyChange :: Change -> CardID -> Cards -> Maybe (Alteration, Cards)
+applyChange :: Change -> CardID -> Cards -> (Alteration, Cards)
 applyChange chng tcID crds
   = case Map.lookup tcID crds of
-      Nothing -> Nothing
+      Nothing ->
+        let (crd', alt) = change chng blank
+         in (alt, Map.insert tcID crd' crds)
       (Just crd) ->
         let (crd', alt) = change chng crd
-         in Just (alt, Map.insert tcID crd' crds)
+         in (alt, Map.insert tcID crd' crds)
