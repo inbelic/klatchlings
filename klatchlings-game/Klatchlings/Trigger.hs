@@ -7,6 +7,7 @@ module Trigger
   , enteredPhase
   , inPhase
   , activeSet
+  , selfEntered
   ) where
 
 import History
@@ -44,3 +45,9 @@ inPhase p = Trigger $ \_ ->
 activeSet :: Trigger
 activeSet = Trigger $ \_ ->
   (/=) 0 . retreive (CardID 0) (Attr ActiveFlag) . getCS
+
+selfEntered :: Zone -> Trigger
+selfEntered z = Trigger $ \cID -> any (f cID) . current . getHistory
+  where f cID (Page _ tcID (Set Zone cz)) = (toEnum cz == z) && (tcID == cID)
+        f cID _ = False
+

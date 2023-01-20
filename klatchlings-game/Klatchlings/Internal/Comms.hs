@@ -43,9 +43,10 @@ uniqueSpan idxs = (==) [1..l] . sort $ idxs
 
 
 requestTargets :: Comm Header
-requestTargets ch hdr@(Assigned cID aID grd trgts)
+requestTargets ch hdr@(Assigned _ cID aID grd trgts)
   = liftM (Targeted cID aID grd)
-  . foldr f (return []) $ trgts
+  . foldr f (return [])
+  . reverse $ trgts
     where f x = (=<<) (requestTarget ch hdr x)
 requestTargets _ hdr = return hdr
 

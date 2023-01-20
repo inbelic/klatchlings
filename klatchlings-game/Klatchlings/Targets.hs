@@ -11,6 +11,10 @@ module Targets
   , toTargets
   , toDraw
   , validPlays
+  , validNoms
+  , getNominated
+  , getZone
+  , targetSelf
   ) where
 
 import Internal.Types
@@ -78,3 +82,34 @@ validPlays p _ gs
      in case hand of
           [] -> [Given . CardID $ 0]
           xs -> [Inquire . (:) (CardID 0) $ xs]
+
+validNoms :: Targeting
+validNoms _ gs
+  = let barracks
+          = within
+          . refine (Stat Fatigued) (0 <=)
+          . refine (Attr NominateFlag) ((/=) 1)
+          . refine (Attr Zone) ((==) Barrack . toEnum)
+          . getCS $ gs
+     in case barracks of
+          [] -> [Given . CardID $ 0]
+          xs -> [Inquire . (:) (CardID 0) $ xs]
+
+getNominated :: Targeting
+getNominated _ gs
+  = map Given
+  . within
+  . refine (Attr NominateFlag) ((==) 1)
+  . refine (Attr Zone) ((==) Barrack . toEnum)
+  . getCS $ gs
+
+getZone :: Zone -> Targeting
+getZone z _ gs
+  = map Given
+  . within
+  . refine (Attr Zone) ((==) z . toEnum)
+  . getCS $ gs
+
+targetSelf :: Targeting
+targetSelf cID _
+  = [Given cID]

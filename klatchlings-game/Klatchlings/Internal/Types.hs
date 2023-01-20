@@ -52,7 +52,7 @@ instance Semigroup Status where
 
 
 -- Ability related things
-data Ability = Ability Timing Trigger Guard Targets Resolves
+data Ability = Ability Liable Timing Trigger Guard Targets Resolves
 
 newtype AbilityID = AbilityID
   { abilityID :: Int
@@ -67,6 +67,15 @@ type AbilityMap = Map.Map AbilityID Ability
 newtype Trigger = Trigger
   { trigger :: CardID -> GameState -> Bool
   }
+
+data Liable
+  = System        -- server will order it
+  | Player          -- owner of card will order it
+  deriving Eq
+
+instance Show Liable where
+  show System = "sys"
+  show Player = "ply"
 
 data Timing
   = OnResolve
@@ -111,19 +120,19 @@ newtype Resolve = Resolve
   }
 
 data Header
-  = Assigned CardID AbilityID Guard [(Resolve, Target)]
-  | Unassigned CardID AbilityID Guard Targets Resolves
+  = Assigned Liable CardID AbilityID Guard [(Resolve, Target)]
+  | Unassigned Liable CardID AbilityID Guard Targets Resolves
   | Targeted CardID AbilityID Guard [(Resolve, Maybe CardID)]
 
 instance Show Header where
-  show (Assigned cID aID _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"
-  show (Unassigned cID aID _ _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"
+  show (Assigned lbl cID aID _ _) = show lbl ++ "(" ++ show cID ++ ":" ++ show aID ++ ")"
+  show (Unassigned lbl cID aID _ _ _) = show lbl ++ "(" ++ show cID ++ ":" ++ show aID ++ ")"
   show (Targeted cID aID _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"
 
 instance Eq Header where
-  (==) (Assigned cID1 aID1 _ _) (Assigned cID2 aID2 _ _)
+  (==) (Assigned _ cID1 aID1 _ _) (Assigned _ cID2 aID2 _ _)
     = cID1 == cID2 && aID1 == aID2
-  (==) (Unassigned cID1 aID1 _ _ _) (Unassigned cID2 aID2 _ _ _)
+  (==) (Unassigned _ cID1 aID1 _ _ _) (Unassigned _ cID2 aID2 _ _ _)
     = cID1 == cID2 && aID1 == aID2
   (==) (Targeted cID1 aID1 _ _) (Targeted cID2 aID2 _ _)
     = cID1 == cID2 && aID1 == aID2

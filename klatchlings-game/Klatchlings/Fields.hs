@@ -10,15 +10,15 @@ instance Show Field where
   show (Stat stt) = show stt
 
 data Attr
-    = Owner | Zone                  -- Enum Attrs
-    | Mana                          -- Int Attrs
-    | ActiveFlag | AttackFlag       -- Boolean flags
-    | Phase                         -- Rules enums
+    = Owner | Zone                                -- Enum Attrs
+    | Mana                                        -- Int Attrs
+    | ActiveFlag | AttackFlag | NominateFlag      -- Boolean flags
+    | Phase                                       -- Rules enums
     deriving (Eq, Ord, Show)
 
 data Stat
     = Power | Toughness | Cost      -- Integer Stats
-    | Fatigue                       -- Boolean Stats
+    | Fatigued                      -- Boolean Stats
     deriving (Eq, Ord, Show)
 
 
@@ -30,6 +30,6 @@ data Zone
   | TopDeck | MidDeck | BotDeck
   deriving (Eq, Ord, Enum)
 
-data Phase = Start | Morning | Seige | Retaliate
-           | Nominate | Skirmish | Denominate | Night
+data Phase = Start | Morning | Seige | Retaliate | Nominate
+           | Formation | Skirmish | Retreat | Night
   deriving (Eq, Ord, Enum)

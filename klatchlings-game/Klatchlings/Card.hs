@@ -8,7 +8,7 @@ module Card
   , reload
   , shift
   , set
-  , replace
+  , modify
   , equip
   -- Internal Usage
   , view
@@ -27,7 +27,7 @@ import qualified Data.Map as Map
   , insert, lookup
   , keys, toList
   , foldrWithKey
-  , union, map
+  , union, unionWith, map
   )
 
 blank :: Card
@@ -63,8 +63,8 @@ set :: Attr -> Int -> Change
 set atr x (Card ats sts abs oc) = (Card ats' sts abs oc, Set atr x)
   where ats' = Map.insert atr x ats
 
-replace :: Stat -> Status -> Change
-replace stt f (Card ats sts abs oc) = (Card ats sts' abs oc, Replace stt)
+modify :: Stat -> Status -> Change
+modify stt f (Card ats sts abs oc) = (Card ats sts' abs oc, Replace stt)
   where sts' = case Map.lookup stt sts of
                Nothing -> Map.insert stt f sts
                (Just g) -> Map.insert stt (f <> g) sts
@@ -76,7 +76,7 @@ equip ablty (Card ats sts abs oc) = (Card ats sts abs' oc,  Equip)
 
 -- Functions for internal use
 view :: Cards -> CardState
-view crds = Map.union (Map.map attrToField as) (Map.map statToField ss)
+view crds = Map.unionWith Map.union (Map.map attrToField as) (Map.map statToField ss)
   where as = viewAttrState crds
         ss = viewStatState as crds
 
@@ -103,12 +103,12 @@ collectTriggered gs cID
   . Map.toList . abilities
     where
       triggered :: GameState -> CardID -> (AbilityID, Ability) -> Bool
-      triggered gs cID (_, Ability _ trg _ _ _) = trigger trg cID gs
+      triggered gs cID (_, Ability _ _ trg _ _ _) = trigger trg cID gs
 
       toHeader :: GameState -> CardID -> (AbilityID, Ability) -> [Header] -> [Header]
-      toHeader gs cID (aID, Ability tmg trg grd trgts rslvs)
-        | tmg == OnResolve = (:) (Unassigned cID aID grd trgts rslvs)
-        | tmg == OnTrigger = (:) (Assigned cID aID grd
+      toHeader gs cID (aID, Ability lbl tmg trg grd trgts rslvs)
+        | tmg == OnResolve = (:) (Unassigned lbl cID aID grd trgts rslvs)
+        | tmg == OnTrigger = (:) (Assigned lbl cID aID grd
                                   $ targetResolves gs cID rslvs trgts)
 
 targetResolves :: GameState -> CardID -> Resolves -> Targets -> [(Resolve, Target)]

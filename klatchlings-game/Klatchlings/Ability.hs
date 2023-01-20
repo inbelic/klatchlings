@@ -1,5 +1,6 @@
 module Ability
   ( Ability(..)
+  , Liable(..)
   , Timing(..)
   , module Trigger
   , module Guard
@@ -9,6 +10,7 @@ module Ability
 import Internal.Types
   ( Ability(..)
   , Timing(..)
+  , Liable(..)
   )
 
 import Trigger 

@@ -9,6 +9,9 @@ import Fields
 import Card
 import Resolves
 import GameState
+import Status
+
+import Keywords
 
 cards = Map.fromList
   [ rules
@@ -19,6 +22,9 @@ cards = Map.fromList
 dummyUnit :: Owner -> Card
 dummyUnit owner
   = mint
+  . fst . equip resolveUnit
+  . fst . modify Fatigued (strictSet 0)
+  . fst . set NominateFlag 0
   . fst . set Owner (fromEnum owner)
   . fst . set Zone (fromEnum MidDeck)
   $ blank
@@ -27,6 +33,10 @@ rules :: (CardID, Card)
 rules = (CardID 0, crd)
   where crd = mint
             . fst . equip setActive
+            . fst . equip nightPhase
+            . fst . equip retreatPhase
+            . fst . equip formationPhase
+            . fst . equip nominatePhase
             . fst . (equip $ play Retaliate)
             . fst . (equip $ play Seige)
             . fst . equip morningPhase
@@ -38,7 +48,7 @@ rules = (CardID 0, crd)
 
 
 phaseControl :: Ability
-phaseControl = Ability OnTrigger trg grd trgts rslvs
+phaseControl = Ability System OnTrigger trg grd trgts rslvs
   where
     trg = both clearStack clearCurrent
     grd = emptyStack
@@ -47,7 +57,7 @@ phaseControl = Ability OnTrigger trg grd trgts rslvs
     rslvs = Map.fromList [(TID 0, advancePhase)]
 
 morningPhase :: Ability
-morningPhase = Ability OnResolve trg grd trgts rslvs
+morningPhase = Ability System OnResolve trg grd trgts rslvs
   where
     trg = enteredPhase Morning
     grd = oneOf (inZone TopDeck)
@@ -58,7 +68,7 @@ morningPhase = Ability OnResolve trg grd trgts rslvs
     rslvs = Map.fromList [(TID 0, independent $ set Zone (fromEnum Hand))]
 
 play :: Phase -> Ability
-play p = Ability OnResolve trg grd trgts rslvs
+play p = Ability Player OnResolve trg grd trgts rslvs
   where
     trg = both clearStack . both clearCurrent . both activeSet $ inPhase p 
     grd = oneOf isRulesCard $ inZone Hand
@@ -68,7 +78,7 @@ play p = Ability OnResolve trg grd trgts rslvs
             [(TID 0, orSetUnactive . independent $ set Zone (fromEnum Stack))]
 
 setActive :: Ability
-setActive = Ability OnTrigger trg grd trgts rslvs
+setActive = Ability System OnTrigger trg grd trgts rslvs
   where
     trg = oneOf (enteredPhase Seige)
         . oneOf (enteredPhase Retaliate)
@@ -78,3 +88,51 @@ setActive = Ability OnTrigger trg grd trgts rslvs
     
     trgts = targetRuleCard . Map.keys $ rslvs
     rslvs = Map.fromList [(TID 0, independent $ set ActiveFlag 1)]
+
+nominatePhase :: Ability
+nominatePhase = Ability Player OnResolve trg grd trgts rslvs
+  where
+    trg = both clearStack
+        . both clearCurrent
+        . both activeSet
+        $ inPhase Nominate
+    grd = oneOf isRulesCard $ inZone Barrack
+
+    trgts = convert [0] validNoms
+    rslvs = Map.fromList
+            [(TID 0, orSetUnactive . independent $ set NominateFlag 1)]
+
+formationPhase :: Ability
+formationPhase = Ability System OnResolve trg grd trgts rslvs
+  where
+    trg = enteredPhase Formation
+    grd = alwaysOk
+
+    trgts = convert (repeat 0) getNominated
+    rslvs = Map.fromList
+            [(TID 0, independent $ set Zone (fromEnum Battlefield))]
+
+retreatPhase :: Ability
+retreatPhase = Ability System OnResolve trg grd trgts rslvs
+  where
+    trg = enteredPhase Retreat
+    grd = alwaysOk
+
+    trgts = convert (repeat 0) (getZone Battlefield)
+
+    rslvs = Map.fromList [(TID 0, independent $ set Zone (fromEnum Barrack))]
+
+nightPhase :: Ability
+nightPhase = Ability System OnResolve trg grd trgts rslvs
+  where
+    trg = enteredPhase Night
+    grd = alwaysOk
+
+    trgts1 = convert (repeat 0) (getZone Barrack)
+    trgts2 = convert (repeat 1) (getZone Barrack)
+    trgts = trgts1 <> trgts2
+
+    rslvs = Map.fromList
+            [ (TID 0, independent $ shift (Stat Fatigued) (-1))
+            , (TID 1, independent $ set NominateFlag 0)
+            ]

@@ -28,8 +28,8 @@ resolveTrigger _ ch (Game (hdr : stck') hist crds)
      in case hdr of
           (Targeted cID aID grd trgts) ->
             resolveTargeted cID aID grd trgts ch game'
-          (Unassigned cID aID grd trgts rslvs) ->
-            resolveUnassigned cID aID grd trgts rslvs ch game'
+          (Unassigned lbl cID aID grd trgts rslvs) ->
+            resolveUnassigned lbl cID aID grd trgts rslvs ch game'
 
 resolveTargeted :: CardID -> AbilityID -> Guard -> [(Resolve, Maybe CardID)] -> Comm Game
 resolveTargeted cID aID grd trgts ch g@(Game stck hist crds)
@@ -51,9 +51,9 @@ resolveResolve cID aID gs grd (rslv, tcID) (hist, crds)
         pg = Page cID tcID alt
      in (record pg hist, crds')
 
-resolveUnassigned :: CardID -> AbilityID -> Guard -> Targets -> Resolves
+resolveUnassigned :: Liable -> CardID -> AbilityID -> Guard -> Targets -> Resolves
                       -> Comm Game
-resolveUnassigned cID aID grd trgts rslvs ch game@(Game stck hist crds) = do
-  hdr' <- requestTargets ch . Assigned cID aID grd
+resolveUnassigned lbl cID aID grd trgts rslvs ch game@(Game stck hist crds) = do
+  hdr' <- requestTargets ch . Assigned lbl cID aID grd
         . targetResolves (peek game) cID rslvs $ trgts
   resolveTrigger False ch (Game (hdr' : stck) hist crds)
