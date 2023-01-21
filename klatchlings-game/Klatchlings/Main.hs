@@ -1,9 +1,11 @@
-module Klatchlings where
+module Main where
 
 import Game
 
 import Control.Concurrent.Chan
 import Control.Concurrent (forkIO)
+
+import Internal.Harness
 
 harness :: Chan String -> IO ()
 harness ch = do
@@ -22,4 +24,4 @@ main :: IO ()
 main = do
   ch <- newChan
   forkIO (runGame ch)
-  harness ch
+  tcpHarness ch
