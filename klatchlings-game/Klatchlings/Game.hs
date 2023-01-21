@@ -3,11 +3,14 @@ module Game
   , startGame
   ) where
 
-import History
-import Rules
-import GameState
 import Internal.Types (Game(..), CardID(..))
 import Internal.Engine (resolveStack)
+
+import Base.History
+import Base.GameState
+
+import Logic.Logic
+
 import Control.Concurrent.Chan
 import Control.Monad (liftM)
 

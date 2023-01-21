@@ -1,4 +1,4 @@
-module Guard
+module Base.Guard
   ( Guard(..)
   , both
   , oneOf
@@ -13,8 +13,8 @@ import Internal.Types
   ( Guard(..)
   )
 
-import Fields
-import GameState
+import Base.Fields
+import Base.GameState
 
 instance Boolean Guard where
   both (Guard grd1) (Guard grd2)

@@ -1,4 +1,4 @@
-module History
+module Base.History
   ( History
   , show
   , begin

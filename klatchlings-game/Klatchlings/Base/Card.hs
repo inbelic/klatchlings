@@ -1,4 +1,4 @@
-module Card
+module Base.Card
   ( Card
   , Cards
   , Change
@@ -18,7 +18,7 @@ module Card
   , applyResolve
   ) where
 
-import Fields (Field(..), Stat, Attr)
+import Base.Fields (Field(..), Stat, Attr)
 import Internal.Types
 import Internal.Misc (getNextKey)
 

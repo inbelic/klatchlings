@@ -1,7 +1,8 @@
-module Resolves
+module Base.Resolves
   ( Resolve(..)
   , independent
   , advancePhase
+  , moveZone
   , orSetUnactive
   ) where
 
@@ -10,9 +11,10 @@ import Internal.Types
   , Resolves
   )
 
-import Fields
-import GameState
-import Card
+import Internal.Misc (maximum')
+import Base.Fields
+import Base.GameState
+import Base.Card
 
 import qualified Data.Map as Map
   ( fromList
@@ -28,6 +30,18 @@ advancePhase
       Start -> set Phase (fromEnum Morning)
       Night -> set Phase (fromEnum Morning)
       p -> set Phase (fromEnum $ succ p)
+
+moveZone :: Zone -> Resolve
+moveZone z = Resolve $ \_ tcID gs ->
+  let owner = retreive tcID (Attr Owner) . getCS $ gs
+      ownersZone
+        = within 
+        . refine (Attr Owner) ((==) owner)
+        . refine (Attr Zone) ((==) TopDeck . toEnum)
+        . getCS $ gs
+      posn = (+ 1) . maximum' . map snd
+           . orderBy (Attr Position) ownersZone . getCS $ gs
+   in set Zone (fromEnum z) . fst . set Position posn
 
 orSetUnactive :: Resolve -> Resolve
 orSetUnactive (Resolve r) = Resolve rslv

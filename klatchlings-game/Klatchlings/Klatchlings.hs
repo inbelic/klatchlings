@@ -1,7 +1,6 @@
 module Klatchlings where
 
 import Game
-import GameState -- not used just to load when we compile
 
 import Control.Concurrent.Chan
 import Control.Concurrent (forkIO)

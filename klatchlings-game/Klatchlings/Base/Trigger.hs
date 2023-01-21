@@ -1,4 +1,4 @@
-module Trigger
+module Base.Trigger
   ( Trigger(..)
   , both
   , oneOf
@@ -10,7 +10,6 @@ module Trigger
   , selfEntered
   ) where
 
-import History
 import Internal.Boolean
 import Internal.Types
   ( Trigger(..)
@@ -18,8 +17,9 @@ import Internal.Types
   , Alteration(..)
   )
 
-import Fields
-import GameState
+import Base.Fields
+import Base.GameState
+import Base.History
 
 instance Boolean Trigger where
   both (Trigger trg1) (Trigger trg2)

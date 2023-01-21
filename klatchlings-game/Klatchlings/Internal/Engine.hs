@@ -1,8 +1,8 @@
 module Internal.Engine where
 
-import Card (view, headers, applyResolve, targetResolves)
-import GameState (peek)
-import History (write, current, record)
+import Base.Card (view, headers, applyResolve, targetResolves)
+import Base.GameState (peek)
+import Base.History (write, current, record)
 import Internal.Types
 import Internal.Comms (Comm, requestReorder, requestTargets)
 import Internal.Misc (getNextKey)

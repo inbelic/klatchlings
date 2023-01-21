@@ -1,4 +1,4 @@
-module Status
+module Base.Status
   ( Status(..)
   , strictSet
   ) where

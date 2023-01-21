@@ -1,6 +1,6 @@
 module Internal.Types where
 
-import Fields (Field, Attr, Stat)
+import Base.Fields (Field, Attr, Stat)
 
 import qualified Data.Map as Map (Map)
 

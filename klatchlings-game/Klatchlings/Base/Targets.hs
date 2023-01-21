@@ -1,4 +1,4 @@
-module Targets
+module Base.Targets
   ( Targets(..)
   , Targeting
   , TargetMap
@@ -26,8 +26,8 @@ import Internal.Types
   , CardID(..)
   )
 
-import Fields
-import GameState
+import Base.Fields
+import Base.GameState
 
 type Targeting = CardID -> GameState -> [Target]
 
@@ -51,7 +51,7 @@ toTargets f = Targets $ \cID gs -> zip (map TID [0..]) . f cID $ gs
 toDraw :: Owner -> Targeting
 toDraw owner _ gs
   = let owned = refine (Attr Owner) ((==) owner . toEnum)
-              $ getCS $ gs
+              . getCS $ gs
         topDeck = within 
                 . refine (Attr Zone) ((==) TopDeck . toEnum)
                 $ owned

@@ -1,22 +1,25 @@
-module GameState
+module Base.GameState
   ( GameState(..)
   , CardID(..)
   , peek
   , retreive
   , refine
   , within
+  , orderBy
   ) where
 
-import Card (view)
-import Fields
+import Base.Card (view)
+import Base.Fields
 import Internal.Types
+import Data.List (sortOn)
 
 import qualified Data.Map as Map
   ( Map, empty, adjust
   , insert, lookup
   , keys, toList
   , foldrWithKey
-  , union, map, filter
+  , union, map
+  , filter
   )
 
 
@@ -39,3 +42,11 @@ refine fld cond = Map.filter cond'
 
 within :: CardState -> [CardID]
 within = Map.keys
+
+orderBy :: Field -> [CardID] -> CardState -> [(CardID, Int)]
+orderBy fld cIDs
+  = sortOn snd . Map.foldrWithKey f [] . Map.map (Map.lookup fld)
+  where f _ Nothing = id
+        f cID (Just x)
+          | elem cID cIDs = (:) (cID, x)
+          | otherwise = id

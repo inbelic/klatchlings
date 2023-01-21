@@ -1,4 +1,4 @@
-module Fields where
+module Base.Fields where
 
 data Field
   = Attr Attr
@@ -11,7 +11,7 @@ instance Show Field where
 
 data Attr
     = Owner | Zone                                -- Enum Attrs
-    | Mana                                        -- Int Attrs
+    | Mana | Position                             -- Int Attrs
     | ActiveFlag | AttackFlag | NominateFlag      -- Boolean flags
     | Phase                                       -- Rules enums
     deriving (Eq, Ord, Show)
