@@ -9,6 +9,8 @@ import Logic.Rules
 
 cards = Map.fromList
   [ rules
-  , (CardID 1, dummyUnit 1 P1)
-  , (CardID 2, dummyUnit 1 P2)
+  , (CardID 1, dummyHero P1)
+  , (CardID 2, dummyHero P2)
+  , (CardID 3, dummyUnit 1 P1)
+  , (CardID 4, dummyUnit 1 P2)
   ]

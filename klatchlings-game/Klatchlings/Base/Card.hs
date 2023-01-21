@@ -123,8 +123,8 @@ applyResolve :: Resolve -> CardID -> CardID -> GameState -> Cards -> (Alteration
 applyResolve rslv cID tcID gs crds
   = case Map.lookup tcID crds of
       Nothing ->
-        let (crd', alt) = resolve rslv cID tcID gs blank
-         in (alt, Map.insert tcID crd' crds)
+        let crd' = mint . fst . resolve rslv cID tcID gs $ blank
+         in (Created, Map.insert tcID crd' crds)
       (Just crd) ->
         let (crd', alt) = resolve rslv cID tcID gs crd
          in (alt, Map.insert tcID crd' crds)

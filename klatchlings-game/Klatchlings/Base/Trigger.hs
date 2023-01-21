@@ -8,6 +8,7 @@ module Base.Trigger
   , inPhase
   , activeSet
   , selfEntered
+  , whenInZone
   ) where
 
 import Internal.Boolean
@@ -51,3 +52,6 @@ selfEntered z = Trigger $ \cID -> any (f cID) . current . getHistory
   where f cID (Page _ tcID (Set Zone cz)) = (toEnum cz == z) && (tcID == cID)
         f cID _ = False
 
+whenInZone :: Zone -> Trigger
+whenInZone z = Trigger $ \cID ->
+  (==) z . toEnum . retreive cID (Attr Zone) . getCS

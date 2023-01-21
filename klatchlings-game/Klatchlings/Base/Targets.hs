@@ -13,8 +13,10 @@ module Base.Targets
   , validPlays
   , validNoms
   , getNominated
-  , getZone
+  , getZone'
   , targetSelf
+  , targetHero
+  , aimStrikes
   ) where
 
 import Internal.Types
@@ -28,6 +30,8 @@ import Internal.Types
 
 import Base.Fields
 import Base.GameState
+
+import Logic.Battle
 
 type Targeting = CardID -> GameState -> [Target]
 
@@ -69,15 +73,18 @@ toDraw owner _ gs
 
 validPlays :: Phase -> Targeting
 validPlays p _ gs
-  = let active = case (p, retreive (CardID 0) (Attr AttackFlag) . getCS $ gs) of
+  = let cs = getCS gs
+        active = case (p, retreive (CardID 0) (Attr AttackFlag) cs) of
                    (Seige, 0) -> P1
                    (Seige, 1) -> P2
                    (Retaliate, 0) -> P2
                    (Retaliate, 1) -> P1
                    _ -> undefined
+        mana = retreive (getHero active cs) (Attr Mana) cs
         hand = within
-             . refine (Attr Owner) ((==) active . toEnum)
-             . refine (Attr Zone) ((==) Hand . toEnum)
+             . refine (Stat Cost) (mana >)
+             . refine (Attr Owner) ((==) (fromEnum active))
+             . refine (Attr Zone) ((==) (fromEnum Hand))
              . getCS $ gs
      in case hand of
           [] -> [Given . CardID $ 0]
@@ -103,13 +110,23 @@ getNominated _ gs
   . refine (Attr Zone) ((==) Barrack . toEnum)
   . getCS $ gs
 
-getZone :: Zone -> Targeting
-getZone z _ gs
+getZone' :: Zone -> Targeting
+getZone' z _ gs
   = map Given
-  . within
-  . refine (Attr Zone) ((==) z . toEnum)
+  . getZone z
   . getCS $ gs
 
 targetSelf :: Targeting
 targetSelf cID _
   = [Given cID]
+
+targetHero :: Targeting
+targetHero cID gs = [Given . getHero owner . getCS $ gs]
+  where
+    owner = toEnum . retreive cID (Attr Owner) . getCS $ gs
+
+aimStrikes :: Targeting
+aimStrikes cID
+  = map (\(_, tcID, _) -> Given tcID)
+  . filter f . constructStrikes . getCS
+    where f (scID, _, _) = cID == scID

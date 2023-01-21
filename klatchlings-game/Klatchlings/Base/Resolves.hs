@@ -4,6 +4,10 @@ module Base.Resolves
   , advancePhase
   , moveZone
   , orSetUnactive
+  , orToHand
+  , payCost
+  , doStrike
+  , setAttackFlag
   ) where
 
 import Internal.Types
@@ -15,6 +19,8 @@ import Internal.Misc (maximum')
 import Base.Fields
 import Base.GameState
 import Base.Card
+
+import Logic.Battle
 
 import qualified Data.Map as Map
   ( fromList
@@ -47,3 +53,32 @@ orSetUnactive :: Resolve -> Resolve
 orSetUnactive (Resolve r) = Resolve rslv
   where rslv _ (CardID 0) _ = set ActiveFlag 0
         rslv cID tcID gs = r cID tcID gs
+
+orToHand :: Resolve -> Resolve
+orToHand (Resolve r) = Resolve $ \cID tcID gs ->
+  let cs = getCS gs
+      owner = toEnum $ retreive tcID (Attr Owner) cs
+      mana = retreive (getHero owner cs) (Attr Mana) cs
+      cost = retreive tcID (Stat Cost) cs
+   in case mana < cost of
+        True -> resolve (moveZone Hand) cID tcID gs
+        False -> r cID tcID gs
+
+payCost :: Resolve
+payCost = Resolve $ \cID _ gs ->
+  let cost = retreive cID (Stat Cost) . getCS $ gs
+   in shift (Attr Mana) (-cost)
+
+doStrike :: Resolve
+doStrike = Resolve $ \cID tcID gs ->
+  getStrike cID tcID . constructStrikes . getCS $ gs
+  where
+    getStrike _ _ [] = undefined
+    getStrike cID tcID ((scID, bcID, amt) : rest)
+      | (cID == scID) && (tcID == bcID) = shift (Stat Toughness) (-amt)
+      | otherwise = getStrike cID tcID rest
+
+setAttackFlag :: Resolve
+setAttackFlag = Resolve $ \_ _ gs ->
+  let seiging = getSeiging gs
+   in set (AttackFlag) (fromEnum seiging)

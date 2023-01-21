@@ -31,9 +31,11 @@ resolveTrigger _ ch (Game (hdr : stck') hist crds)
           (Unassigned lbl cID aID grd trgts rslvs) ->
             resolveUnassigned lbl cID aID grd trgts rslvs ch game'
 
-resolveTargeted :: CardID -> AbilityID -> Guard -> [(Resolve, Maybe CardID)] -> Comm Game
+resolveTargeted :: CardID -> AbilityID -> Guard -> [(Resolve, Maybe CardID)] 
+                -> Comm Game
 resolveTargeted cID aID grd trgts ch g@(Game stck hist crds)
-  = resolveStack ch . Game stck hist' $ crds'
+  = do
+    resolveStack ch . Game stck hist' $ crds'
     where
       gs = peek g
       (hist', crds') = foldr (resolveResolve cID aID gs grd . fillVoid crds)
@@ -51,8 +53,8 @@ resolveResolve cID aID gs grd (rslv, tcID) (hist, crds)
         pg = Page cID tcID alt
      in (record pg hist, crds')
 
-resolveUnassigned :: Liable -> CardID -> AbilityID -> Guard -> Targets -> Resolves
-                      -> Comm Game
+resolveUnassigned :: Liable -> CardID -> AbilityID -> Guard -> Targets
+                      -> Resolves -> Comm Game
 resolveUnassigned lbl cID aID grd trgts rslvs ch game@(Game stck hist crds) = do
   hdr' <- requestTargets ch . Assigned lbl cID aID grd
         . targetResolves (peek game) cID rslvs $ trgts

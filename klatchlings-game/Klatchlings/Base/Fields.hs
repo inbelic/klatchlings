@@ -26,7 +26,7 @@ data Owner = P1 | P2
   deriving (Eq, Ord, Enum)
 
 data Zone
-  = Ether | Hand | Stack | Barrack | Grave | Battlefield
+  = Ether | Hand | Stack | Barrack | Grave | Battlefield | Throne
   | TopDeck | MidDeck | BotDeck
   deriving (Eq, Ord, Enum)
 

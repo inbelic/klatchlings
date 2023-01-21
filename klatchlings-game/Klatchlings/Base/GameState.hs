@@ -1,11 +1,15 @@
 module Base.GameState
   ( GameState(..)
+  , CardState(..)
   , CardID(..)
   , peek
   , retreive
   , refine
   , within
   , orderBy
+  , getZone
+  , getOwnersZone
+  , getHero
   ) where
 
 import Base.Card (view)
@@ -50,3 +54,16 @@ orderBy fld cIDs
         f cID (Just x)
           | elem cID cIDs = (:) (cID, x)
           | otherwise = id
+
+getZone :: Zone -> CardState -> [CardID]
+getZone z = within
+          . refine (Attr Zone) ((==) (fromEnum z))
+
+getOwnersZone :: Owner -> Zone -> CardState -> [CardID]
+getOwnersZone o z
+  = within
+  . refine (Attr Owner) ((==) (fromEnum o))
+  . refine (Attr Zone) ((==) (fromEnum z))
+
+getHero :: Owner -> CardState -> CardID
+getHero o = head . getOwnersZone o Throne

@@ -21,6 +21,7 @@ data Alteration
   | Set Attr Int        -- We set an Attr to a value Int
   | Replace Stat        -- We modified the Status of a Stat
   | Equip               -- We gave the card an ability
+  | Created             -- This card was created as a token
   deriving Show
 
 newtype CardID = CardID

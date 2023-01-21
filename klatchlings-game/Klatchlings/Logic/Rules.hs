@@ -109,9 +109,11 @@ retreatPhase = Ability System OnResolve trg grd trgts rslvs
     trg = enteredPhase Retreat
     grd = alwaysOk
 
-    trgts = convert (repeat 0) (getZone Battlefield)
+    trgts1 = targetRuleCard [TID 0]
+    trgts2 = convert (repeat 1) (getZone' Battlefield)
+    trgts = trgts1 <> trgts2
 
-    rslvs = Map.fromList [(TID 0, moveZone Barrack)]
+    rslvs = Map.fromList [(TID 0, setAttackFlag), (TID 1, moveZone Barrack)]
 
 nightPhase :: Ability
 nightPhase = Ability System OnResolve trg grd trgts rslvs
@@ -119,8 +121,8 @@ nightPhase = Ability System OnResolve trg grd trgts rslvs
     trg = enteredPhase Night
     grd = alwaysOk
 
-    trgts1 = convert (repeat 0) (getZone Barrack)
-    trgts2 = convert (repeat 1) (getZone Barrack)
+    trgts1 = convert (repeat 0) (getZone' Barrack)
+    trgts2 = convert (repeat 1) (getZone' Barrack)
     trgts = trgts1 <> trgts2
 
     rslvs = Map.fromList

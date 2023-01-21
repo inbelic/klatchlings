@@ -1,5 +1,7 @@
 module Base.History
   ( History
+  , Page(..)
+  , Alteration(..)
   , show
   , begin
   , current
@@ -7,9 +9,10 @@ module Base.History
   , entire
   , record
   , write
+  , searchUntil
   ) where
 
-import Internal.Types(History(..), Page)
+import Internal.Types(History(..), Page(..), Alteration(..))
 
 instance Show History where
   show (History (cur, past)) = show cur ++ show past
@@ -24,10 +27,24 @@ previous :: History -> [Page]
 previous (History (_, prev)) = prev 
 
 entire :: History -> [Page]
-entire (History (cur, past)) = cur ++ past
+entire (History (cur, prev)) = cur ++ prev
 
 record :: Page -> History -> History
-record pg (History (cur, past)) = History (pg : cur, past)
+record pg (History (cur, prev)) = History (pg : cur, prev)
 
 write :: History -> History
-write (History (cur, past)) = History ([], cur ++ past)
+write (History (cur, prev)) = History ([], cur ++ prev)
+
+searchUntil :: (Page -> Bool) -> History -> [Page]
+searchUntil cond (History (cur, prev))
+  = case searchUntil' cond cur [] of
+      (False, pgs) -> snd . searchUntil' cond prev $ pgs
+      (True, pgs) -> pgs
+
+searchUntil' :: (Page -> Bool) -> [Page] -> [Page] -> (Bool, [Page])
+searchUntil' _ [] acc = (False, acc)
+searchUntil' cond (pg:pgs) acc
+  = case cond pg of
+      True -> (True, acc)
+      False -> searchUntil' cond pgs $ pg : acc
+
