@@ -4,10 +4,18 @@
 -export([start_link/1, init/2, stop/1]).
 
 %% user exports
--export([target/1]).
+-export([request/1]).
 
-target(Int) ->
-    relayer ! {trgt, Int}.
+-define(ORDER   , 0).
+-define(TARGET  , 1).
+-define(HEADER  , 2).
+-define(INFO    , 3).
+-define(ENDLIST , 4).
+-define(OKAY    , 5).
+-define(ENDHDR  , 6).
+
+request(Req) ->
+    relayer ! Req.
 
 stop(Reason) ->
     relayer ! {stop, Reason}.
@@ -25,22 +33,83 @@ init(ExtPrg, Parent) ->
 
 loop(Port, Parent) ->
     receive
-        {trgt, Int} when is_integer(Int) ->
-            Port ! {self(), {command, encode({trgt, Int})}},
-            receive
-                {Port, {data, Data}} ->
-                    Parent ! {return, decode(Data)}
-            end,
+        {trgt, _Hdr, _Range} = Req ->
+            handle_target(Port, Parent, Req),
             loop(Port, Parent);
-        {stop, Reason} ->
+        {rand, _Hdr, _Range} = Req ->
+            handle_random(Port, Parent, Req),
+            loop(Port, Parent);
+        {ordr, _Ordering} = Req ->
+            handle_ordering(Port, Parent, Req),
+            loop(Port, Parent);
+        {info, _GameState} = Req ->
+            handle_info(Port, Parent, Req),
+            loop(Port, Parent);
+        {stop, _Reason} ->
             Port ! {self(), close},
             receive
                 {Port, closed} ->
                     exit(normal)
             end;
-        {'EXIT', Port, Reason} ->
+        {'EXIT', Port, _Reason} ->
             exit(port_terminated)
     end.
 
-encode({trgt, Int}) -> [0, Int].
+encode(ordr, Len) -> [?ORDER, Len];
+encode(hdr, Type) -> [?HEADER, Type];
+encode(eol, ok) -> [?ENDLIST, ?OKAY];
+encode(eoh, Posn) -> [?ENDHDR, Posn];
+encode(CID, AID) when is_integer(CID) andalso is_integer(AID) ->
+    [CID, AID].
+
 decode([Int]) -> Int.
+
+handle_target(_Port, _Parent, {trgt, _Hdr, _Range}) ->
+    ok.
+
+handle_random(_Port, _Parent, {rand, _Hdr, _Range}) ->
+    ok.
+
+handle_ordering(Port, Parent, {ordr, Ordering}) ->
+    ok = send_ordering(Port, Ordering),
+    Response = recv_ordering(Port),
+    Parent ! {ordr, Response}.
+
+handle_info(_Port, _Parent, {info, _GameState}) ->
+    ok.
+
+send_header(Port, {Type, Posn, CardID, AbilityID} = _Header) ->
+    Port ! {self(), {command, encode(hdr, Type)}},
+    check_received(Port),
+    Port ! {self(), {command, encode(CardID, AbilityID)}},
+    check_received(Port),
+    Port ! {self(), {command, encode(eoh, Posn)}},
+    check_received(Port),
+    ok.
+
+check_received(Port) ->
+    receive
+        {Port, {data, Data}} ->
+            ok = decode(Data)
+    end.
+
+send_ordering(Port, Ordering) ->
+    Port ! {self(), {command, encode(ordr, length(Ordering))}},
+    check_received(Port),
+    ok = lists:foreach(fun(Hdr) -> send_header(Port, Hdr) end, Ordering),
+    Port ! {self(), {command, encode(eol, ok)}},
+    check_received(Port),
+    ok.
+
+recv_ordering(Port) ->
+    recv_ordering(Port, []).
+
+recv_ordering(Port, Acc) ->
+    receive
+        {Port, {data, Data}} ->
+            case decode(Data) of
+                eol -> Acc;
+                {val, Val} ->
+                    recv_ordering(Port, [Val | Acc])
+            end
+    end.

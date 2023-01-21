@@ -3,7 +3,16 @@
 
 typedef unsigned char byte;
 
-enum COMMANDS{ TARGET_HEADER, TARGET_CONTENTS, TARGET_EOF };
+enum COMMAND{ ORDER, TARGET, HEADER, INFO, ENDLIST, OKAY };
+
+enum HEADER_TYPE{ SYSTEM, PLAYER };
+
+typedef struct header {
+    HEADER_TYPE type;
+    int cardID;
+    int abltyID;
+    int position;
+} header;
 
 int read_exact(byte* buf, int len);
 int write_exact(byte* buf, int len);
