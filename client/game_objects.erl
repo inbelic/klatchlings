@@ -12,23 +12,37 @@ encode({trgt, Trgt}) ->
     list_to_binary(integer_to_list(Trgt));
 encode({rand, Rand}) ->
     list_to_binary(integer_to_list(Rand));
-enocde(info) ->
+encode(info) ->
     <<"ok">>.
 
 decode(Bin) when is_binary(Bin) ->
     decode(binary_to_list(Bin));
 decode(StrRequest) when is_list(StrRequest) ->
     case StrRequest of
-        "ordr: " ++ TrgToken ->
-            {ordr, decode_triggers(TrgToken, [], 1)};
-        "trgt: " ++ Range ->
-            {trgt, decode_range(Range, [])};
-        "rand: " ++ Range ->
-            {rand, decode_range(Range, [])};
+        "ordr: " ++ Token0 ->
+            {ordr, decode_triggers(Token0, [], 1)};
+        "trgt: " ++ Token0 ->
+            {_Hdr, Token1} = decode_header(Token0, 0),
+            {trgt, decode_range(Token1, [])};
+        "rand: " ++ Token0 ->
+            {_Hdr, Token1} = decode_header(Token0, 0),
+            {rand, decode_range(Token1, [])};
         "info: " ++ GameState ->
             {info, GameState};
         _ ->
             no_parse
+    end.
+
+decode_header(Token, Posn) ->
+    case Token of
+        "sys(" ++ Token0 ->
+            {_CardID, ":" ++ Token1} = extract_number(Token0, ""),
+            {_AbltyID, ")" ++ Token2} = extract_number(Token1, ""),
+            {{system, Posn}, Token2};
+        "ply(" ++ Token0 ->
+            {CardID, ":" ++ Token1} = extract_number(Token0, ""),
+            {AbltyID, Token2} = extract_number(Token1, ""),
+            {{player, Posn, CardID, AbltyID}, Token2}
     end.
 
 decode_range([], Acc) ->
@@ -46,7 +60,7 @@ decode_range(Token, Acc) ->
         " " ++ Token0 ->
             decode_range(Token0, Acc);
         Token0 ->
-            {CardID, Token1} = extract_number(Token0, ""),
+            {CardID, Token1} = extract_number(Token0),
             Acc1 = [CardID | Acc],
             decode_range(Token1, Acc1)
     end.
@@ -65,16 +79,10 @@ decode_triggers(Token, Acc, Posn) ->
             decode_triggers(Token0, Acc, Posn);
         " " ++ Token0 ->
             decode_triggers(Token0, Acc, Posn);
-        "sys(" ++ Token0 ->
-            {_CardID, ":" ++ Token1} = extract_number(Token0, ""),
-            {_AbltyID, Token2} = extract_number(Token1, ""),
-            Acc1 = [{system, Posn} | Acc],
-            decode_triggers(Token2, Acc1, Posn + 1);
-        "ply(" ++ Token0 ->
-            {CardID, ":" ++ Token1} = extract_number(Token0, ""),
-            {AbltyID, Token2} = extract_number(Token1, ""),
-            Acc1 = [{player, Posn, CardID, AbltyID} | Acc],
-            decode_triggers(Token2, Acc1, Posn + 1)
+        Token0 ->
+            {Hdr, Token1} = decode_header(Token0, Posn),
+            Acc1 = [Hdr | Acc],
+            decode_triggers(Token1, Acc1, Posn + 1)
     end.
 
 extract_number(Token) ->

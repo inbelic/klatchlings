@@ -11,7 +11,7 @@ import Internal.Types
   )
 
 import Base.History
-import Data.List (sort)
+import Data.List (sort, partition)
 import Text.Read (readMaybe)
 import Control.Monad (liftM)
 import Control.Concurrent.Chan (Chan, readChan, writeChan)

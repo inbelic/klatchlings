@@ -3,7 +3,7 @@ CXX := erlc
 ODIR = build
 OUT = -o $(ODIR)
 
-_OBJS=port_relayer.beam client.beam
+_OBJS=port_relayer.beam client.beam game_objects.beam game_harness.beam
 OBJS= $(patsubst %,$(ODIR)/%,$(_OBJS))
 
 NAME=trg-client
