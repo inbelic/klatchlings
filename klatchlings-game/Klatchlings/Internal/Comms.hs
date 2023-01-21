@@ -7,14 +7,25 @@ import Internal.Types
   , Resolve(..)
   , Resolves
   , CardID (..)
+  , GameState(..)
   )
 
+import Base.History
 import Data.List (sort)
 import Text.Read (readMaybe)
 import Control.Monad (liftM)
 import Control.Concurrent.Chan (Chan, readChan, writeChan)
 
 type Comm a = Chan String -> a -> IO a
+
+displayState :: Chan String -> GameState -> IO Bool
+displayState ch gs@(GameState _ hist cs) = do
+  writeChan ch . (++) "info: " $ (show hist) ++ (show cs)
+  response <- readChan ch
+  case response of
+    "ok" -> return True
+    _ -> displayState ch gs
+
 
 requestReorder :: Comm [Header]
 requestReorder _ [] = return []
