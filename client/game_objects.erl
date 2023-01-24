@@ -41,7 +41,7 @@ decode_header(Token, Posn) ->
             {{system, Posn, CardID, AbltyID}, Token2};
         "ply(" ++ Token0 ->
             {CardID, ":" ++ Token1} = extract_number(Token0, ""),
-            {AbltyID, Token2} = extract_number(Token1, ""),
+            {AbltyID, ")" ++ Token2} = extract_number(Token1, ""),
             {{player, Posn, CardID, AbltyID}, Token2}
     end.
 
@@ -67,8 +67,6 @@ decode_triggers(Token, Acc, Posn) ->
             decode_triggers(Token0, Acc, Posn);
         "]" ++ Token0 ->
             decode_triggers(Token0, Acc, Posn);
-        ")" ++ Token0 ->
-            decode_triggers(Token0, Acc, Posn);
         "," ++ Token0 ->
             decode_triggers(Token0, Acc, Posn);
         " " ++ Token0 ->
@@ -86,8 +84,6 @@ decode_range(Token, Acc) ->
         "[" ++ Token0 ->
             decode_range(Token0, Acc);
         "]" ++ Token0 ->
-            decode_range(Token0, Acc);
-        ")" ++ Token0 ->
             decode_range(Token0, Acc);
         "," ++ Token0 ->
             decode_range(Token0, Acc);
