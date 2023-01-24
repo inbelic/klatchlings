@@ -62,6 +62,7 @@ encode(eoh, Posn) -> [?ENDHDR, Posn];
 encode(CID, AID) when is_integer(CID) andalso is_integer(AID) ->
     [CID, AID].
 
+decode([?OKAY]) -> ok;
 decode([Int]) -> Int.
 
 handle_target(_Port, _Parent, {trgt, _Hdr, _Range}) ->
@@ -73,7 +74,7 @@ handle_random(_Port, _Parent, {rand, _Hdr, _Range}) ->
 handle_ordering(Port, Parent, {ordr, Ordering}) ->
     ok = send_ordering(Port, Ordering),
     Response = recv_ordering(Port),
-    Parent ! {ordr, Response}.
+    gen_server:cast(Parent, {ordered, Response}).
 
 handle_info(_Port, _Parent, {info, _GameState}) ->
     ok.

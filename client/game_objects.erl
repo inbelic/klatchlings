@@ -2,17 +2,17 @@
 
 -export([encode/1, decode/1]).
 
-encode({ordr, Ordering}) ->
+encode({ordered, Ordering}) ->
     list_to_binary("["
                    ++ lists:join(",",
                                  lists:map(fun integer_to_list/1,
                                            Ordering))
                    ++ "]");
-encode({trgt, Trgt}) ->
+encode({targeted, Trgt}) ->
     list_to_binary(integer_to_list(Trgt));
-encode({rand, Rand}) ->
+encode({randomized, Rand}) ->
     list_to_binary(integer_to_list(Rand));
-encode({info, ok}) ->
+encode({info_conf, ok}) ->
     <<"ok">>.
 
 decode(Bin) when is_binary(Bin) ->

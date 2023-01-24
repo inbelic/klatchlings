@@ -27,4 +27,8 @@ loop(Parent, LSock, Sock) ->
     end.
 
 forward_request(Parent, Req) ->
-    gen_server:call(Parent, Req).
+    gen_server:cast(Parent, Req),
+    receive
+        Response ->
+            Response
+    end.
