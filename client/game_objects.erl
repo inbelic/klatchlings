@@ -2,6 +2,14 @@
 
 -export([encode/1, decode/1]).
 
+%% Records
+-record(header,
+        { system
+        , position
+        , cardID
+        , abilityID
+        }).
+
 encode({ordered, Ordering}) ->
     list_to_binary("["
                    ++ lists:join(",",
@@ -38,11 +46,13 @@ decode_header(Token, Posn) ->
         "sys(" ++ Token0 ->
             {CardID, ":" ++ Token1} = extract_number(Token0),
             {AbltyID, ")" ++ Token2} = extract_number(Token1),
-            {{system, Posn, CardID, AbltyID}, Token2};
+            {#header{system = 0, position = Posn,
+                     cardID = CardID, abilityID = AbltyID}, Token2};
         "ply(" ++ Token0 ->
             {CardID, ":" ++ Token1} = extract_number(Token0, ""),
             {AbltyID, ")" ++ Token2} = extract_number(Token1, ""),
-            {{player, Posn, CardID, AbltyID}, Token2}
+            {#header{system = 1, position = Posn,
+                     cardID = CardID, abilityID = AbltyID}, Token2}
     end.
 
 extract_number(Token) ->
