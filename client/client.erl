@@ -37,7 +37,11 @@ handle_cast({trgt, _Hdr, _Range} = Req, State) ->
     io:format("<~p> ~p: ~p~n", [harness, f_trgt, Req]),
     porter:request(self(), Req),
     {noreply, State};
-
+handle_cast({rand, Range} = Req, State) ->
+    io:format("<~p> ~p: ~p~n", [harness, f_rand, Req]),
+    RandCID = random_in_range(Range),
+    gen_server:cast(self(), {porter, {randomized, RandCID}}),
+    {noreply, State};
 
 %% Relaying a response from ui port to tcp
 handle_cast({porter, Response}, #state{harness = Harness} = State) ->
@@ -54,3 +58,7 @@ handle_cast(_Request, State) ->
 
 terminate(_Reason, #state{port = Port} = _State) ->
     Port ! stop.
+
+random_in_range(Range) ->
+    RandIdx = rand:uniform(length(Range)),
+    lists:nth(RandIdx, Range).

@@ -42,9 +42,7 @@ int handle_request(byte* buf)
             break;
     }
 
-    buf[0] = ret;
-
-    return write_cmd(buf, 1);
+    return ret;
 }
 
 // Private Helper Functions
@@ -133,10 +131,10 @@ int handle_order(byte *buf, int amount)
     }
     buf[0] = EOL;
     write_cmd(buf, 1);
-    confirm_okay(buf);
+    int ret = confirm_okay(buf);
 
     delete []hdrs;
-    return 0;
+    return ret;
 }
 
 int send_target(byte *buf, int tcID)
@@ -165,11 +163,11 @@ int handle_target(byte *buf, int amount)
     int target;
     target = rngIDs[0];
 
-    send_target(buf, target);
+    int ret = send_target(buf, target);
 
     delete []rngIDs;
     delete hdr;
-    return 0;
+    return ret;
 }
 
 int recv_header(byte *buf, Header *hdr)

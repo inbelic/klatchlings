@@ -62,8 +62,8 @@ decode(StrRequest) when is_list(StrRequest) ->
             {Hdr, Token1} = decode_header(Token0, 0),
             {trgt, Hdr, decode_range(Token1, [])};
         "rand: " ++ Token0 ->
-            {Hdr, Token1} = decode_header(Token0, 0),
-            {rand, Hdr, decode_range(Token1, [])};
+            {_Hdr, Token1} = decode_header(Token0, 0),
+            {rand, decode_range(Token1, [])};
         "info: " ++ GameState ->
             {info, GameState};
         _ ->
