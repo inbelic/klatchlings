@@ -5,13 +5,9 @@ _OBJS=main.o erlcomms.o
 OBJS= $(patsubst %,$(ODIR)/%,$(_OBJS))
 
 ODIR=build
-OUT=$(ODIR)/trg-ui
+OUT=$(ODIR)/klatchlings-ui
 
 build: $(OUT)
-
-run: build
-	cd build; \
-	./trg-ui
 
 all: build run
 

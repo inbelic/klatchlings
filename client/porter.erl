@@ -11,7 +11,7 @@ start() ->
 init() ->
     register(porter, self()),
     process_flag(trap_exit, true),
-    Port =  open_port({spawn, "~/dev/trg/ui/build/trg-ui"}, [{packet, 2}]),
+    Port =  open_port({spawn, "../../ui/build/klatchlings-ui"}, [{packet, 2}]),
     loop(Port).
 
 %% Will respond directly

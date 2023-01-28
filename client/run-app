@@ -1,0 +1,11 @@
+#!/usr/bin/env escript
+
+main(_) ->
+    {ok, Client} = client:start(self()),
+    io:format("started client ~p~n", [Client]),
+    _Port = open_port({spawn, "../../klatchlings-game/build/klatch-game"},
+                     [{packet, 2}]),
+    receive
+        stop ->
+            ok
+    end.

@@ -10,9 +10,13 @@ NAME=trg-client
 
 build: $(NAME)
 
-run: build
+set-up:
+	cp run-app build/run-app; \
+	chmod u+x build/run-app
+
+run: build set-up
 	cd build; \
-	erl
+	./run-app
 
 all: build
 
