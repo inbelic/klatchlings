@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "erlcomms.h"
-#include "header.h"
 
 // Helpers defined below
 int read_exact(byte *buf, int len);
@@ -14,6 +13,7 @@ int handle_order(byte *buf, int amount);
 int handle_target(byte *buf, int amount);
 
 int recv_header(byte *buf, Header *hdr);
+int recv_cid(byte *buf, int *cID);
 
 int send_okay(byte *buf);
 int confirm_okay(byte *buf);
@@ -103,9 +103,6 @@ int write_cmd(byte *buf, int len)
 
 // Helper Function
 int send_order(byte *buf, int posn) {
-    int ret;
-    RESPONSE_TYPE resp;
-
     buf[0] = VALUE;
     buf[1] = posn;
     write_cmd(buf, 2);
@@ -142,17 +139,36 @@ int handle_order(byte *buf, int amount)
     return 0;
 }
 
+int send_target(byte *buf, int tcID)
+{
+    buf[0] = VALUE;
+    buf[1] = tcID;
+    write_cmd(buf, 2);
+
+    return confirm_okay(buf);
+}
+
 int handle_target(byte *buf, int amount)
 {
-    Header *hdrs = new Header[amount];
-    Header *cur_hdr = hdrs;
+    Header *hdr = new Header;
+    recv_header(buf, hdr);
+
+    int *rngIDs = new int[amount];
+    int *cur = rngIDs;
     
     for (int i = 0; i < amount; i++) {
-        recv_header(buf, cur_hdr);
-        cur_hdr++;
+        recv_cid(buf, cur);
+        cur++;
     }
 
-    delete []hdrs;
+    // Then we will need to do some fancy stuff to get the order
+    int target;
+    target = rngIDs[0];
+
+    send_target(buf, target);
+
+    delete []rngIDs;
+    delete hdr;
     return 0;
 }
 
@@ -172,6 +188,16 @@ int recv_header(byte *buf, Header *hdr)
     hdr->abilityID = buf[1];
     send_okay(buf);
 
+    return 0;
+}
+
+int recv_cid(byte *buf, int *cID)
+{
+    if (read_cmd(buf) <= 0) {
+        return -1;
+    }
+    *cID = buf[0];
+    send_okay(buf);
     return 0;
 }
 

@@ -20,7 +20,7 @@ start() ->
 
 init(_) ->
     {ok, Port} = porter:start(),
-    {ok, Harness} = game_harness:start_link(?GAME_PORT),
+    {ok, Harness} = harness:start_link(?GAME_PORT),
     {ok, #state{port = Port, harness = Harness}}.
 
 
@@ -30,12 +30,19 @@ handle_call(_Request, _From, State) ->
 
 %% Relaying a request from tcp to the ui port
 handle_cast({ordr, _Hdrs} = Req, State) ->
+    io:format("<~p> ~p: ~p~n", [harness, f_ordr, Req]),
+    porter:request(self(), Req),
+    {noreply, State};
+handle_cast({trgt, _Hdr, _Range} = Req, State) ->
+    io:format("<~p> ~p: ~p~n", [harness, f_trgt, Req]),
     porter:request(self(), Req),
     {noreply, State};
 
+
 %% Relaying a response from ui port to tcp
 handle_cast({porter, Response}, #state{harness = Harness} = State) ->
-    gen_server:cast(Harness, {response, Response}),
+    io:format("<~p> ~p: ~p~n", [harness, r_rep, Response]),
+    Harness ! {response, Response},
     {noreply, State};
 
 handle_cast(tcp_closed, State) ->

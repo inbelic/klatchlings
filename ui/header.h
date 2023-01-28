@@ -8,4 +8,7 @@ struct Header {
     int abilityID;
 };
 
+enum REQUEST_TYPE { CMD_TARGET, CMD_ORDER };
+enum RESPONSE_TYPE { OKAY, VALUE, EOL };
+
 #endif

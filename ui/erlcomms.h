@@ -3,9 +3,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
-
-enum REQUEST_TYPE { CMD_TARGET, CMD_ORDER };
-enum RESPONSE_TYPE { OKAY, VALUE, EOL };
+#include "header.h"
 
 typedef unsigned char byte;
 

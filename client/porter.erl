@@ -2,22 +2,7 @@
 -export([start/0, init/0]).
 -export([inquire/1, request/2]).
 
-%% Records
--record(header,
-        { system
-        , position
-        , cardID
-        , abilityID
-        }).
-
-%% Request Enums
--define(CMD_TARGET, 0).
--define(CMD_ORDER, 1).
-
-%% Response Enums
--define(OKAY, 0).
--define(VALUE, 1).
--define(EOL, 2).
+-include("header.hrl").
 
 start() ->
     Port = spawn(?MODULE, init, []),
@@ -59,13 +44,15 @@ handle_request(Port, {ordr, Hdrs}) ->
     Fun = fun(Hdr) -> send_header(Port, Hdr) end,
     lists:foreach(Fun, Hdrs),
     Ordering = recv_order(Port),
-    Ordering;
-handle_request(Port, {trgt, Hdrs}) ->
-    send_msg(Port, {trgt, length(Hdrs)}),
+    {ordered, Ordering};
+handle_request(Port, {trgt, Hdr, Range}) ->
+    send_msg(Port, {trgt, length(Range)}),
     confirm_okay(Port),
-    Fun = fun(Hdr) -> send_header(Port, Hdr) end,
-    lists:foreach(Fun, Hdrs),
-    ok.
+    send_header(Port, Hdr),
+    Fun = fun(TCID) -> ok = send_cid(Port, TCID) end,
+    lists:foreach(Fun, Range),
+    TCID = recv_trgt(Port),
+    {targeted, TCID}.
 
 send_msg(Port, Msg) ->
     Port ! {self(), {command, encode(Msg)}}.
@@ -89,6 +76,11 @@ send_header(Port, #header{} = Hdr) ->
     confirm_okay(Port),
     ok.
 
+send_cid(Port, TCID) ->
+    send_msg(Port, {value, TCID}),
+    confirm_okay(Port),
+    ok.
+
 recv_order(Port) ->
     recv_order(Port, []).
 
@@ -100,6 +92,15 @@ recv_order(Port, Acc) ->
         {value, Val} -> recv_order(Port, [Val | Acc])
     end.
 
+recv_trgt(Port) ->
+    Incoming = recv_msg(Port),
+    send_okay(Port),
+    case Incoming of
+        {value, Val} -> Val
+    end.
+
+%% Encoding and decoding towards the UI port
+encode({value, Val}) -> [Val];
 encode({ordr, Amt}) -> [?CMD_ORDER, Amt];
 encode({trgt, Amt}) -> [?CMD_TARGET, Amt];
 encode({true, Y}) -> [1, Y];
