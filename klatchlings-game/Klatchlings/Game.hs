@@ -5,6 +5,7 @@ module Game
 
 import Internal.Types (Game(..), CardID(..))
 import Internal.Engine (resolveStack)
+import Internal.Comms (displayState)
 
 import Base.History
 import Base.GameState
@@ -19,5 +20,5 @@ import qualified Data.Map as Map
 startGame :: Chan String -> IO Game
 startGame ch = do
   let game = Game [] begin cards
-  putStrLn . show . getCS . peek $ game
+  displayState Map.empty ch . peek $ game
   resolveStack ch $ game

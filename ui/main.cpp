@@ -1,14 +1,13 @@
 #include <SFML/Graphics.hpp>
 #include "erlcomms.h"
-
+#include "game.h"
 #include <atomic>
 #include <thread>
 
-std::atomic<bool> running;
+std::atomic<bool> running, gate;
 
 void render_main()
 {
-    running = true;
     sf::RenderWindow window(sf::VideoMode(200, 200), "SFML works!");
     sf::CircleShape shape(100.f);
     shape.setFillColor(sf::Color::Green);
@@ -19,6 +18,9 @@ void render_main()
             switch (event.type) {
             case sf::Event::Closed:
                 running = false;
+                break;
+            case sf::Event::KeyPressed:
+                gate = true;
                 break;
             default:
                 break;
@@ -36,12 +38,16 @@ void render_main()
 
 int main()
 {
-    //std::thread render(render_main);
+    running = true;
+    gate = false;
+    std::thread render(render_main);
 
     byte buf[2];
-    while (0 < handle_request(buf));
+    while (running && 0 < handle_request(buf, gate));
 
-    //render.join();
+    running = false;
+
+    render.join();
 
     return 0;
 }

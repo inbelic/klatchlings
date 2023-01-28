@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <unistd.h>
 #include "erlcomms.h"
 
 // Helpers defined below
@@ -18,7 +16,7 @@ int recv_cid(byte *buf, int *cID);
 int send_okay(byte *buf);
 int confirm_okay(byte *buf);
 
-int handle_request(byte* buf)
+int handle_request(byte* buf, std::atomic<bool> &gate)
 {
     int type, amount, ret;
 
@@ -30,6 +28,9 @@ int handle_request(byte* buf)
     amount = buf[1];
 
     send_okay(buf);
+
+    while (!gate);
+    gate = false;
 
     switch (type) {
         case CMD_TARGET:

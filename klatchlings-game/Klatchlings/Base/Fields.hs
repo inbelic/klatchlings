@@ -28,7 +28,7 @@ data Owner = P1 | P2
 data Zone
   = Ether | Hand | Stack | Barrack | Grave | Battlefield | Throne
   | TopDeck | MidDeck | BotDeck
-  deriving (Eq, Ord, Enum)
+  deriving (Eq, Ord, Enum, Show)
 
 data Phase = Start | Morning | Seige | Retaliate | Nominate
            | Formation | Skirmish | Retreat | Night

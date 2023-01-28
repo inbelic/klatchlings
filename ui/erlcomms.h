@@ -3,10 +3,11 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <atomic>
 #include "header.h"
 
 typedef unsigned char byte;
 
-int handle_request(byte *buf);
+int handle_request(byte *buf, std::atomic<bool> &gate);
 
 #endif

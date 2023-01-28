@@ -70,7 +70,7 @@ newtype Trigger = Trigger
   }
 
 data Liable
-  = System        -- server will order it
+  = System          -- server will order it
   | Player          -- owner of card will order it
   deriving Eq
 

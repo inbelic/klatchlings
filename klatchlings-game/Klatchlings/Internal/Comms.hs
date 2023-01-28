@@ -8,7 +8,10 @@ import Internal.Types
   , Resolves
   , CardID (..)
   , GameState(..)
+  , CardState
   )
+
+import Internal.Display (encodeDiff)
 
 import Base.History
 import Data.List (sort, partition)
@@ -18,14 +21,13 @@ import Control.Concurrent.Chan (Chan, readChan, writeChan)
 
 type Comm a = Chan String -> a -> IO a
 
-displayState :: Chan String -> GameState -> IO Bool
-displayState ch gs@(GameState _ hist cs) = do
-  writeChan ch . (++) "info: " $ (show hist) ++ (show cs)
+displayState :: CardState -> Chan String -> GameState -> IO Bool
+displayState old ch gs = do
+  writeChan ch . (++) "info: " $ encodeDiff old gs
   response <- readChan ch
   case response of
     "ok" -> return True
-    _ -> displayState ch gs
-
+    _ -> displayState old ch gs
 
 requestReorder :: Comm [Header]
 requestReorder _ [] = return []

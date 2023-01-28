@@ -34,17 +34,21 @@ handle_call(_Request, _From, State) ->
 
 %% Relaying a request from tcp to the ui port
 handle_cast({ordr, _Hdrs} = Req, State) ->
-    io:format("<~p> ~p: ~p~n", [harness, f_ordr, Req]),
+    io:format("<~p> ~p: ~p~n", [client, f_ordr, Req]),
     porter:request(self(), Req),
     {noreply, State};
 handle_cast({trgt, _Hdr, _Range} = Req, State) ->
-    io:format("<~p> ~p: ~p~n", [harness, f_trgt, Req]),
+    io:format("<~p> ~p: ~p~n", [client, f_trgt, Req]),
     porter:request(self(), Req),
     {noreply, State};
 handle_cast({rand, Range} = Req, State) ->
-    io:format("<~p> ~p: ~p~n", [harness, f_rand, Req]),
+    io:format("<~p> ~p: ~p~n", [client, f_rand, Req]),
     RandCID = random_in_range(Range),
     gen_server:cast(self(), {porter, {randomized, RandCID}}),
+    {noreply, State};
+handle_cast({info, GameState}, State) ->
+    io:format("<~p> ~p: ~p~n", [client, f_info, GameState]),
+    gen_server:cast(self(), {porter, {info_conf, ok}}),
     {noreply, State};
 
 %% Relaying a response from ui port to tcp

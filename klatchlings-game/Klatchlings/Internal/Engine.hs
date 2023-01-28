@@ -4,12 +4,11 @@ import Base.Card (view, headers, applyResolve, targetResolves)
 import Base.GameState (peek)
 import Base.History (write, current, record)
 import Internal.Types
-import Internal.Comms (Comm, requestReorder, requestTargets)
+import Internal.Comms (Comm, requestReorder, requestTargets, displayState)
 import Internal.Misc (getNextKey)
 
 resolveStack :: Comm Game
 resolveStack ch g@(Game stck hist crds) = do
-  putStrLn . show $ hist
   let gs = peek g
       hdrs = headers gs crds
   hdrs' <- (=<<) (sequence . map (requestTargets ch))
@@ -35,9 +34,11 @@ resolveTargeted :: CardID -> AbilityID -> Guard -> [(Resolve, Maybe CardID)]
                 -> Comm Game
 resolveTargeted cID aID grd trgts ch g@(Game stck hist crds)
   = do
-    resolveStack ch . Game stck hist' $ crds'
+    displayState cs ch . peek $ g'
+    resolveStack ch g'
     where
-      gs = peek g
+      g' = Game stck hist' crds'
+      gs@(GameState _ _ cs) = peek g
       (hist', crds') = foldr (resolveResolve cID aID gs grd . fillVoid crds)
                         (hist, crds) trgts
       fillVoid :: Cards -> (Resolve, Maybe CardID) -> (Resolve, CardID)
