@@ -18,6 +18,7 @@ void render_main()
             switch (event.type) {
             case sf::Event::Closed:
                 running = false;
+                gate = true;
                 break;
             case sf::Event::KeyPressed:
                 gate = true;
@@ -41,6 +42,8 @@ int main()
     running = true;
     gate = false;
     std::thread render(render_main);
+
+    GameInternal gi;
 
     byte buf[2];
     while (running && 0 < handle_request(buf, gate));

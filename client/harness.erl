@@ -64,8 +64,8 @@ decode(StrRequest) when is_list(StrRequest) ->
         "rand: " ++ Token0 ->
             {_Hdr, Token1} = decode_header(Token0, 0),
             {rand, decode_range(Token1, [])};
-        "info: " ++ GameState ->
-            {info, GameState};
+        "info: " ++ Token ->
+            {info, decode_gamestate(Token)};
         _ ->
             no_parse
     end.
@@ -133,3 +133,76 @@ decode_range(Token, Acc) ->
             Acc1 = [CardID | Acc],
             decode_range(Token1, Acc1)
     end.
+
+decode_gamestate(Token) ->
+    decode_gamestate(Token, []).
+
+decode_gamestate([], GameState) ->
+    GameState;
+decode_gamestate(Token0, GameState) ->
+    {Zone, ": [" ++ Token1} = extract_zone(Token0),
+    {FieldMapsToken, "], " ++ Token2} = extract_fieldmaps(Token1),
+    FieldMaps = decode_fieldmaps(FieldMapsToken, []),
+    decode_gamestate(Token2, [{Zone, FieldMaps} | GameState]).
+
+extract_zone(Token) ->
+    extract_zone(Token, []).
+
+extract_zone([], []) ->
+    none;
+extract_zone([Cur|Token], Zone) ->
+    case Cur == $: of
+        true -> {list_to_atom(string:lowercase(lists:reverse(Zone))),
+                 [Cur|Token]};
+        false -> extract_zone(Token, [Cur | Zone])
+    end.
+
+extract_fieldmaps(Token) ->
+    extract_fieldmaps(Token, []).
+
+extract_fieldmaps([], []) ->
+    none;
+extract_fieldmaps([Cur|Token], FieldMapsToken) ->
+    case Cur == $] of
+        true -> {lists:reverse(FieldMapsToken), [Cur|Token]};
+        false -> extract_fieldmaps(Token, [Cur | FieldMapsToken])
+    end.
+
+decode_fieldmaps([], FieldMaps) ->
+    FieldMaps;
+decode_fieldmaps(Token0, FieldMaps) ->
+    {CardID, " {" ++ Token1} = extract_number(Token0),
+    {FieldMapToken, "} " ++ Token2} = extract_fieldmap(Token1),
+    FieldMap = decode_fieldmap(FieldMapToken, []),
+    decode_fieldmaps(Token2, [{CardID, FieldMap} | FieldMaps]).
+
+extract_fieldmap(Token) ->
+    extract_fieldmap(Token, []).
+
+extract_fieldmap([], []) ->
+    none;
+extract_fieldmap([Cur|Token], FieldMapToken) ->
+    case Cur == $} of
+        true -> {lists:reverse(FieldMapToken), [Cur|Token]};
+        false -> extract_fieldmap(Token, [Cur | FieldMapToken])
+    end.
+
+decode_fieldmap([], FieldMap) ->
+    FieldMap;
+decode_fieldmap(Token0, FieldMap) ->
+    {Field, " => " ++ Token1} = extract_field(Token0),
+    {Value, ", " ++ Token2} = extract_number(Token1),
+    decode_fieldmap(Token2, [{Field, Value} | FieldMap]).
+
+extract_field(Token) ->
+    extract_field(Token, []).
+
+extract_field([], []) ->
+    none;
+extract_field([Cur|Token], Field) ->
+    case Cur == 32 of
+        true -> {list_to_atom(string:lowercase(lists:reverse(Field))),
+                 [Cur | Token]};
+        false -> extract_field(Token, [Cur | Field])
+    end.
+

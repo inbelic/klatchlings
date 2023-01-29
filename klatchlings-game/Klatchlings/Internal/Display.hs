@@ -57,11 +57,15 @@ compDiff old = Map.foldrWithKey (compDiff' old) Map.empty
   where
     compDiff' :: CardState -> CardID -> FieldMap -> CardState -> CardState
     compDiff' old cID fm new
-      = case Map.lookup cID old of
-          Nothing -> Map.insert cID fm new
-          (Just oldFM) ->
-            let fm' = Map.filterWithKey (takeAltered oldFM) fm
-             in Map.insert cID fm' new
+      = case (Map.lookup cID old, Map.lookup (Attr Zone) fm) of
+          (_, Nothing) -> undefined
+          (Nothing, _) -> Map.insert cID fm new
+          (Just oldFM, curZone) ->
+            case (==) curZone . Map.lookup (Attr Zone) $ oldFM of
+              False -> Map.insert cID fm new
+              True ->
+                let fm' = Map.filterWithKey (takeAltered oldFM) fm
+                 in Map.insert cID fm' new
 
     takeAltered :: FieldMap -> Field -> Int -> Bool
     takeAltered oldFM fld x

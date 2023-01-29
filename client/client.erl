@@ -46,9 +46,9 @@ handle_cast({rand, Range} = Req, State) ->
     RandCID = random_in_range(Range),
     gen_server:cast(self(), {porter, {randomized, RandCID}}),
     {noreply, State};
-handle_cast({info, GameState}, State) ->
+handle_cast({info, GameState} = Req, State) ->
     io:format("<~p> ~p: ~p~n", [client, f_info, GameState]),
-    gen_server:cast(self(), {porter, {info_conf, ok}}),
+    porter:request(self(), Req),
     {noreply, State};
 
 %% Relaying a response from ui port to tcp

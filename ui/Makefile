@@ -1,7 +1,7 @@
 LIBS=-lsfml-graphics -lsfml-window -lsfml-system
 CXX := g++
 
-_OBJS=main.o erlcomms.o
+_OBJS=main.o erlcomms.o game.o
 OBJS= $(patsubst %,$(ODIR)/%,$(_OBJS))
 
 ODIR=build

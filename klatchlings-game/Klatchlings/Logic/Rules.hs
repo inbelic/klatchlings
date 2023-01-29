@@ -26,6 +26,7 @@ rules = (CardID 0, crd)
             . fst . set Phase (fromEnum Start)
             . fst . set ActiveFlag 0
             . fst . set AttackFlag 0
+            . fst . set Zone (fromEnum Ether)
             $ blank
 
 phaseControl :: Ability

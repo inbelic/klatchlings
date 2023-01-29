@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <atomic>
 #include "header.h"
+#include "game.h"
 
 typedef unsigned char byte;
 
