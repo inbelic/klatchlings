@@ -205,4 +205,3 @@ extract_field([Cur|Token], Field) ->
                  [Cur | Token]};
         false -> extract_field(Token, [Cur | Field])
     end.
-

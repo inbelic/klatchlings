@@ -7,18 +7,28 @@ import Internal.Types (Game(..), CardID(..))
 import Internal.Engine (resolveStack)
 import Internal.Comms (displayState)
 
+
 import Base.History
 import Base.GameState
 
 import Logic.Logic
 
 import Control.Concurrent.Chan
+import Control.Concurrent (forkIO)
 import Control.Monad (liftM)
 
 import qualified Data.Map as Map
 
-startGame :: Chan String -> IO Game
-startGame ch = do
+runGame :: Chan String -> IO ()
+runGame ch = do
+  startInfo <- readChan ch
   let game = Game [] begin cards
   displayState Map.empty ch . peek $ game
-  resolveStack ch $ game
+  g' <- resolveStack ch game
+  return ()
+
+startGame :: IO (Chan String)
+startGame = do
+  ch <- newChan
+  forkIO (runGame ch)
+  return ch
