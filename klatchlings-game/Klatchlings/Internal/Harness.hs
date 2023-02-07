@@ -6,10 +6,15 @@ module Internal.Harness
 -- A module that will provide a more coherent interface for the external
 -- communication
 
+import Game (startGame)
+
+import qualified Data.Map as Map
 import qualified Control.Exception as E
 import qualified Data.ByteString.Char8 as C
 import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
+
+import Text.Read (readMaybe)
 
 import Control.Concurrent.Chan
 import Control.Concurrent (forkIO)
@@ -17,14 +22,47 @@ import Control.Concurrent (forkIO)
 localHost = "127.0.0.1"
 erlPort = "3000"
 
-tcpHarness :: Chan String -> IO ()
-tcpHarness ch = runTCPClient localHost erlPort (harnessLoop ch)
-  where harnessLoop ch s = do
-          gameRequest <- readChan ch
-          sendAll s $ C.pack gameRequest
-          srvrResponse <- recv s 1024
-          writeChan ch $ C.unpack srvrResponse
-          harnessLoop ch s
+newtype GameID = GameID
+  { gameID :: Int
+  }
+  deriving (Eq, Ord)
+
+process :: String -> Maybe (GameID, String)
+process str =
+  let (gIDStr, respStr) = span ((/=) ':') str
+   in case (readMaybe gIDStr, respStr) of
+        (Just gID, ':' : resp) -> Just (GameID gID, resp)
+        _ -> Nothing
+
+prepend :: GameID -> String -> String
+prepend (GameID gID) str = show gID ++ ":" ++ str
+
+tcpHarness :: IO ()
+tcpHarness = runTCPClient localHost erlPort initialize
+  where
+    initialize s = do
+      sendAll s . C.pack $ "connected"
+      harnessLoop Map.empty s
+
+    harnessLoop hm s = do
+      contents <- recv s 1024
+      case process $ C.unpack contents of
+        Nothing -> do
+          -- Badly formatted info so we will say so and continue on...
+          sendAll s . C.pack $ "bad game id format"
+          harnessLoop hm s
+        (Just (gID, request)) -> do
+          --Otherwise, we can query a response
+          ch <- case Map.lookup gID hm of
+                  (Just ch) -> return ch
+                  Nothing -> startGame
+          putStrLn request
+          writeChan ch request
+          gameResponse <- readChan ch
+          putStrLn gameResponse
+          sendAll s . C.pack . prepend gID $ gameResponse
+          let hm' = Map.insert gID ch hm
+          harnessLoop hm' s
 
 -- taking from Network.Socket example
 runTCPClient :: HostName -> ServiceName -> (Socket -> IO a) -> IO a
