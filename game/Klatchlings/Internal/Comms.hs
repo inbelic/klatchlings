@@ -7,6 +7,8 @@ import Internal.Types
   , Resolve(..)
   , Resolves
   , CardID (..)
+  , CardState
+  , GameState
   )
 
 import Data.List (sort)
@@ -15,6 +17,9 @@ import Control.Monad (liftM)
 import Control.Concurrent.Chan (Chan, readChan, writeChan)
 
 type Comm a = Chan String -> a -> IO a
+
+displayState :: CardState -> Chan String -> GameState -> IO ()
+displayState prevCS ch curCS = undefined
 
 requestReorder :: Comm [Header]
 requestReorder _ [] = return []

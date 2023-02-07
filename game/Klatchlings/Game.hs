@@ -5,7 +5,7 @@ module Game
 
 import Internal.Types (Game(..), CardID(..))
 import Internal.Engine (resolveStack)
-
+import Internal.Comms (displayState)
 
 import Base.History
 import Base.GameState
