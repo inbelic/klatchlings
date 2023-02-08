@@ -1,5 +1,5 @@
-SUBDIRS_BUILD := game.build
-SUBDIRS_CLEAN := game.clean
+SUBDIRS_BUILD := server.build game.build client.build
+SUBDIRS_CLEAN := server.clean game.clean client.clean
 
 build: $(SUBDIRS_BUILD)
 
