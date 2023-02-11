@@ -1,0 +1,6 @@
+implement the receving in C client from erlang [partially done]
+    - will need to make it into a main loop now and ensure this works
+
+add the C abstract representation of a game state
+
+add standard input for client code for testing purposes
