@@ -1,20 +1,21 @@
 -module(client_conn_mgr).
 
+-include("../include/client_conn.hrl").
+
 %% gen_server exports
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2]).
 
--export([start/2]).
+-export([start/1]).
 
 -record(state,
         { conns = []
-        , server = undefined
-        , socket = undefined
+        , client_config
         }).
 
-start(Port, Server) ->
-    gen_server:start(?MODULE, {Port, Server}, []).
+start(Port) ->
+    gen_server:start(?MODULE, Port, []).
 
-init({Port, Server}) ->
+init(Port) ->
     register(manager, self()), 
     {ok, ListenSocket}
         = gen_tcp:listen(Port, [binary, {packet, 0}, {reuseaddr, true},
@@ -22,17 +23,17 @@ init({Port, Server}) ->
     lists:foreach(fun(_) ->
                           gen_server:cast(self(), create)
                   end, lists:seq(1,5)),
-    {ok, #state{server = Server, socket = ListenSocket}}.
+    Config = #client_config{listen_socket = ListenSocket},
+    {ok, #state{client_config = Config}}.
 
 %% Error catch all
 handle_call(_Request, _From, State) ->
     {stop, unknown_request, State}.
 
 
-handle_cast(create, #state{socket = ListenSocket, server = Server,
-                           conns = Conns} = State) ->
+handle_cast(create, #state{client_config = Config, conns = Conns} = State) ->
     process_flag(trap_exit, true),
-    {ok, Conn} = client_conn:start_link({Server, ListenSocket}),
+    {ok, Conn} = client_conn:start_link(Config),
     {noreply, State#state{conns = [Conn | Conns]}};
 
 %% Error catch all

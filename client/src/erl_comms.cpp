@@ -76,44 +76,62 @@ int send_all(int sockfd, int to_send, const byte *buf)
 int send_buf(int sockfd, int to_send, const byte *buf)
 {
     byte size = 0xff & to_send;
+
     if (send(sockfd, &size, 1, 0) != 1)
         return -1;
+
+    if (size == 0) return 0;
     return send_all(sockfd, to_send, buf);
 }
 
-// compute the number of bytes of the request and then send it
+// compute the number of bytes of the input and then send it
 // in the required chunks
-int send_request(int sockfd, const byte *request)
+int send_input(int sockfd, const byte *input)
 {
-    int to_send = strlen(request);
+    int to_send = strlen(input);
     int sent = 0;
     
     while (255 < to_send) {
-        send_buf(sockfd, 255, request + sent);
+        send_buf(sockfd, 255, input + sent);
         to_send -= 255;
         sent += 255;
     }
     sleep(1);
-    to_send -= send_buf(sockfd, to_send, request + sent);
+    to_send -= send_buf(sockfd, to_send, input + sent);
 
     int ack;
     byte buf[1];
     ack = recv(sockfd, buf, 1, 0);
 
-    if (to_send != 0 || ack != 1 || *buf != 0)
+    if (to_send != 0 || ack != 1)
         return -1;
-    return 0;
+
+    return buf[0];
 }
 
-int recv_response(int sockfd, byte *buf)
+int recv_output(int sockfd, byte *buf, byte *output, int &size)
 {
-    int num_bytes;
-    if((num_bytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }
-    
-    buf[num_bytes] = '\0';
-    printf("client: received '%s'\n", buf);
-    return 0;
+    int to_recv;
+    int recvd = 0;
+    do {
+        if (recv(sockfd, buf, 1, 0) != 1)
+            return -1;
+
+        to_recv = buf[0];
+        printf("will take %d bytes\n", to_recv);
+        if (to_recv == 0)
+            break;
+        if (recv(sockfd, buf, to_recv, 0) != to_recv)
+            return -1;
+        printf("will got '%s'\n", buf);
+        if (size <= recvd + to_recv)
+            size = recvd * 2;
+            output = (byte *) realloc(output, size);
+        memcpy((void *) (output + recvd), (const void *)buf, to_recv);
+        recvd += to_recv;
+    } while (255 < to_recv);
+    output[recvd] = '\0';
+
+    printf("client: received '%s'\n", output);
+    return recvd;
 }

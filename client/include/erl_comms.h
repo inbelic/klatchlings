@@ -15,14 +15,14 @@
 
 #include "commands.h"
 
-#define MAXDATASIZE 100
+#define MAXDATASIZE 256
 
 typedef char byte;
 
 int start_conn(const char *host, const char *port, int &sockfd);
 
-int send_request(int sockfd, const byte *request);
+int send_input(int sockfd, const byte *input);
 
-int recv_response(int sockfd, byte *response);
+int recv_output(int sockfd, byte *response, byte *output, int &size);
 
 #endif

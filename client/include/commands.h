@@ -7,4 +7,16 @@
 
 #define PORT "4560"
 
+enum SERVER_RECV_ERROR { OKAY, BAD_HEADER, BAD_COMMAND, BAD_ARGS };
+
+enum COMMANDS {
+    ORDER, TARGET, // Game commands
+    PLAY, QUIT     // Menu commands
+};
+
+enum REQUEST {
+    VIEW, ORDR, TRGT, RAND
+};
+
+
 #endif
