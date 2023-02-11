@@ -5,5 +5,8 @@
 -export([run/0]).
 
 run() ->
-    {ok, ClientSup} = client_conn_mgr:start(?PORT, self()),
-    {ok, ClientSup}.
+    {ok, Harness} = harness:start_link(),
+    {ok, _GQueue} = gqueue:start_link(),
+    ok = gen_server:call(gqueue, {give_harness, Harness}),
+    {ok, _ClientSup} = client_conn_mgr:start(?PORT),
+    ok.

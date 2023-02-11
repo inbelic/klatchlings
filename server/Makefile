@@ -3,7 +3,8 @@ CXX := erlc
 ODIR = build
 OUT = -o $(ODIR)
 
-_OBJS=client_conn_mgr.beam client_conn.beam server.beam
+_OBJS=client_conn_mgr.beam client_conn.beam server.beam harness.beam \
+	  encode.beam gqueue.beam
 OBJS= $(patsubst %,$(ODIR)/%,$(_OBJS))
 
 SRC=src
