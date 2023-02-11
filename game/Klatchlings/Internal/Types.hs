@@ -70,13 +70,13 @@ newtype Trigger = Trigger
   }
 
 data Liable
-  = System        -- server will order it
+  = System          -- server will order it
   | Player          -- owner of card will order it
   deriving Eq
 
 instance Show Liable where
-  show System = "sys"
-  show Player = "ply"
+  show System = "s"
+  show Player = "p"
 
 data Timing
   = OnResolve
@@ -128,7 +128,7 @@ data Header
 instance Show Header where
   show (Assigned lbl cID aID _ _) = show lbl ++ "(" ++ show cID ++ ":" ++ show aID ++ ")"
   show (Unassigned lbl cID aID _ _ _) = show lbl ++ "(" ++ show cID ++ ":" ++ show aID ++ ")"
-  show (Targeted cID aID _ _) = "(" ++ show cID ++ ":" ++ show aID ++ ")"
+  show (Targeted cID aID _ _) = "t(" ++ show cID ++ ":" ++ show aID ++ ")"
 
 instance Eq Header where
   (==) (Assigned _ cID1 aID1 _ _) (Assigned _ cID2 aID2 _ _)
@@ -139,6 +139,10 @@ instance Eq Header where
     = cID1 == cID2 && aID1 == aID2
   (==) _ _ = False
 
+getHdrCID :: Header -> CardID
+getHdrCID (Assigned _ cID _ _ _) = cID
+getHdrCID (Unassigned _ cID _ _ _ _) = cID
+getHdrCID (Targeted cID _ _ _) = cID
 
 -- History related things
 newtype History = History

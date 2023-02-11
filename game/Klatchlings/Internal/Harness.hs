@@ -20,7 +20,7 @@ import Control.Concurrent.Chan
 import Control.Concurrent (forkIO)
 
 localHost = "127.0.0.1"
-erlPort = "3000"
+gamePort = "3000"
 
 newtype GameID = GameID
   { gameID :: Int
@@ -38,7 +38,7 @@ prepend :: GameID -> String -> String
 prepend (GameID gID) str = show gID ++ ":" ++ str
 
 tcpHarness :: IO ()
-tcpHarness = runTCPClient localHost erlPort initialize
+tcpHarness = runTCPClient localHost gamePort initialize
   where
     initialize s = do
       sendAll s . C.pack $ "connected"
@@ -54,12 +54,12 @@ tcpHarness = runTCPClient localHost erlPort initialize
         (Just (gID, request)) -> do
           --Otherwise, we can query a response
           ch <- case Map.lookup gID hm of
-                  (Just ch) -> return ch
+                  (Just usedCh) -> return usedCh
                   Nothing -> startGame
-          putStrLn request
+          putStrLn ("req: " ++ request)
           writeChan ch request
           gameResponse <- readChan ch
-          putStrLn gameResponse
+          putStrLn ("resp: " ++ gameResponse)
           sendAll s . C.pack . prepend gID $ gameResponse
           let hm' = Map.insert gID ch hm
           harnessLoop hm' s

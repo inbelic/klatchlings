@@ -1,19 +1,22 @@
 module Internal.Engine where
 
 import Base.Card (view, headers, applyResolve, targetResolves)
-import Base.GameState (peek)
+import Base.GameState (peek, hdrOwner)
 import Base.History (write, current, record)
 import Internal.Types
 import Internal.Comms (Comm, requestReorder, requestTargets)
+import Internal.Display (displayState)
 import Internal.Misc (getNextKey)
+import Control.Monad (liftM)
 
 resolveStack :: Comm Game
 resolveStack ch g@(Game stck hist crds) = do
-  putStrLn . show $ hist
   let gs = peek g
       hdrs = headers gs crds
-  hdrs' <- (=<<) (sequence . map (requestTargets ch))
-         $ requestReorder ch hdrs
+  hdrs' <- liftM (map snd)
+         . (=<<) (sequence . map (requestTargets ch))
+         . requestReorder ch
+         . map (\hdr -> (hdrOwner gs hdr, hdr)) $ hdrs
   let hist' = write hist
       stck' = hdrs' ++ stck
       curEmpty = null . current $ hist
@@ -35,9 +38,11 @@ resolveTargeted :: CardID -> AbilityID -> Guard -> [(Resolve, Maybe CardID)]
                 -> Comm Game
 resolveTargeted cID aID grd trgts ch g@(Game stck hist crds)
   = do
+    displayState cs ch . peek $ g'
     resolveStack ch . Game stck hist' $ crds'
     where
-      gs = peek g
+      g' = Game stck hist' crds'
+      gs@(GameState _ _ cs) = peek g
       (hist', crds') = foldr (resolveResolve cID aID gs grd . fillVoid crds)
                         (hist, crds) trgts
       fillVoid :: Cards -> (Resolve, Maybe CardID) -> (Resolve, CardID)
@@ -56,6 +61,9 @@ resolveResolve cID aID gs grd (rslv, tcID) (hist, crds)
 resolveUnassigned :: Liable -> CardID -> AbilityID -> Guard -> Targets
                       -> Resolves -> Comm Game
 resolveUnassigned lbl cID aID grd trgts rslvs ch game@(Game stck hist crds) = do
-  hdr' <- requestTargets ch . Assigned lbl cID aID grd
-        . targetResolves (peek game) cID rslvs $ trgts
+  let gs = peek game
+  hdr' <- liftM snd . requestTargets ch
+        . (\hdr -> (hdrOwner gs hdr, hdr))
+        . Assigned lbl cID aID grd
+        . targetResolves gs cID rslvs $ trgts
   resolveTrigger False ch (Game (hdr' : stck) hist crds)

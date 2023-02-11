@@ -3,6 +3,7 @@ module Base.GameState
   , CardState(..)
   , CardID(..)
   , peek
+  , hdrOwner
   , retreive
   , refine
   , within
@@ -10,6 +11,7 @@ module Base.GameState
   , getZone
   , getOwnersZone
   , getHero
+  , getActive
   ) where
 
 import Base.Card (view)
@@ -30,6 +32,10 @@ import qualified Data.Map as Map
 peek :: Game -> GameState
 peek (Game stck hist crds)
   = GameState stck hist . view $ crds
+
+hdrOwner :: GameState -> Header -> Owner
+hdrOwner gs hdr
+  = toEnum . retreive (getHdrCID hdr) (Attr Owner) . getCS $ gs
 
 -- Will default to 0
 retreive :: CardID -> Field -> CardState -> Int
@@ -67,3 +73,12 @@ getOwnersZone o z
 
 getHero :: Owner -> CardState -> CardID
 getHero o = head . getOwnersZone o Throne
+
+getActive :: Phase -> CardState -> Owner
+getActive p cs
+  = case (p, retreive (CardID 0) (Attr AttackFlag) cs) of
+      (Seige, 0) -> P1
+      (Seige, 1) -> P2
+      (Retaliate, 0) -> P2
+      (Retaliate, 1) -> P1
+      _ -> undefined

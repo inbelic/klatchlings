@@ -18,15 +18,21 @@ rules = (CardID 0, crd)
             . fst . equip nightPhase
             . fst . equip retreatPhase
             . fst . equip formationPhase
-            . fst . equip nominatePhase
-            . fst . (equip $ play Retaliate)
-            . fst . (equip $ play Seige)
             . fst . equip morningPhase
             . fst . equip phaseControl
             . fst . set Phase (fromEnum Start)
             . fst . set ActiveFlag 0
             . fst . set AttackFlag 0
             $ blank
+
+playerRules :: Owner -> Card
+playerRules o
+  = mint
+  . fst . equip (nominatePhase o)
+  . fst . equip (play o Retaliate)
+  . fst . equip (play o Seige)
+  . fst . set Owner (fromEnum o)
+  $ blank
 
 phaseControl :: Ability
 phaseControl = Ability System OnTrigger trg grd trgts rslvs
@@ -48,10 +54,13 @@ morningPhase = Ability System OnResolve trg grd trgts rslvs
     trgts = convert [0, 0] . combine (toDraw P1) $ (toDraw P2)
     rslvs = Map.fromList [(TID 0, moveZone Hand)]
 
-play :: Phase -> Ability
-play p = Ability System OnResolve trg grd trgts rslvs
+play :: Owner -> Phase -> Ability
+play o p = Ability System OnResolve trg grd trgts rslvs
   where
-    trg = both clearStack . both clearCurrent . both activeSet $ inPhase p 
+    trg = both (isActive o p)
+        . both clearStack
+        . both clearCurrent
+        . both activeSet $ inPhase p
     grd = oneOf isRulesCard $ inZone Hand
 
     trgts = convert [0] (validPlays p)
@@ -70,8 +79,8 @@ setActive = Ability System OnTrigger trg grd trgts rslvs
     trgts = targetRuleCard . Map.keys $ rslvs
     rslvs = Map.fromList [(TID 0, independent $ set ActiveFlag 1)]
 
-nominatePhase :: Ability
-nominatePhase = Ability System OnResolve trg grd trgts rslvs
+nominatePhase :: Owner -> Ability
+nominatePhase o = Ability System OnResolve trg grd trgts rslvs
   where
     trg = both clearStack
         . both clearCurrent
@@ -79,7 +88,7 @@ nominatePhase = Ability System OnResolve trg grd trgts rslvs
         $ inPhase Nominate
     grd = oneOf isRulesCard $ inZone Barrack
 
-    trgts = convert [0] validNoms
+    trgts = convert [0] (validNoms o)
     rslvs = Map.fromList
             [(TID 0, orSetUnactive . independent $ set NominateFlag 1)]
 

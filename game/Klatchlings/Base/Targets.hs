@@ -74,12 +74,7 @@ toDraw owner _ gs
 validPlays :: Phase -> Targeting
 validPlays p _ gs
   = let cs = getCS gs
-        active = case (p, retreive (CardID 0) (Attr AttackFlag) cs) of
-                   (Seige, 0) -> P1
-                   (Seige, 1) -> P2
-                   (Retaliate, 0) -> P2
-                   (Retaliate, 1) -> P1
-                   _ -> undefined
+        active = getActive p cs
         mana = retreive (getHero active cs) (Attr Mana) cs
         hand = within
              . refine (Stat Cost) (mana >)
@@ -90,13 +85,14 @@ validPlays p _ gs
           [] -> [Given . CardID $ 0]
           xs -> [Inquire . (:) (CardID 0) $ xs]
 
-validNoms :: Targeting
-validNoms _ gs
+validNoms :: Owner -> Targeting
+validNoms o _ gs
   = let barracks
           = within
+          . refine (Attr Owner) ((==) (fromEnum o))
           . refine (Stat Fatigued) (0 <=)
           . refine (Attr NominateFlag) ((/=) 1)
-          . refine (Attr Zone) ((==) Barrack . toEnum)
+          . refine (Attr Zone) ((==) (fromEnum Barrack))
           . getCS $ gs
      in case barracks of
           [] -> [Given . CardID $ 0]

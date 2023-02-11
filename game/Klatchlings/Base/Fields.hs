@@ -22,8 +22,13 @@ data Stat
     deriving (Eq, Ord, Show)
 
 
-data Owner = P1 | P2
+data Owner = Rules | P1 | P2
   deriving (Eq, Ord, Enum)
+
+instance Show Owner where
+  show P1 = "P1:"
+  show P2 = "P2:"
+  show Rules = "RS:"
 
 data Zone
   = Ether | Hand | Stack | Barrack | Grave | Battlefield | Throne

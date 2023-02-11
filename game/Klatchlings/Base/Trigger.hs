@@ -9,6 +9,7 @@ module Base.Trigger
   , activeSet
   , selfEntered
   , whenInZone
+  , isActive
   ) where
 
 import Internal.Boolean
@@ -55,3 +56,6 @@ selfEntered z = Trigger $ \cID -> any (f cID) . current . getHistory
 whenInZone :: Zone -> Trigger
 whenInZone z = Trigger $ \cID ->
   (==) z . toEnum . retreive cID (Attr Zone) . getCS
+
+isActive :: Owner -> Phase -> Trigger
+isActive o p = Trigger $ \_ -> (==) o . getActive p . getCS
