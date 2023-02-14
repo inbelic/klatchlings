@@ -89,6 +89,9 @@ int send_buf(int sockfd, int to_send, const byte *buf)
 int send_input(int sockfd, const byte *input)
 {
     int to_send = strlen(input);
+    if (to_send == 0)
+        return 0;
+
     int sent = 0;
     
     while (255 < to_send) {
@@ -96,7 +99,6 @@ int send_input(int sockfd, const byte *input)
         to_send -= 255;
         sent += 255;
     }
-    sleep(1);
     to_send -= send_buf(sockfd, to_send, input + sent);
 
     int ack;
@@ -109,21 +111,29 @@ int send_input(int sockfd, const byte *input)
     return buf[0];
 }
 
+int mod256(int x)
+{
+    if (x < 0) {
+        return 256 + x;
+    }
+    return x;
+}
+
 int recv_output(int sockfd, byte *buf, byte *output, int &size)
 {
     int to_recv;
     int recvd = 0;
     do {
-        if (recv(sockfd, buf, 1, 0) != 1)
+        to_recv = recv(sockfd, buf, 1, 0);
+        if (to_recv != 1)
             return -1;
 
-        to_recv = buf[0];
-        printf("will take %d bytes\n", to_recv);
+        to_recv = mod256(buf[0]);
+
         if (to_recv == 0)
             break;
         if (recv(sockfd, buf, to_recv, 0) != to_recv)
             return -1;
-        printf("will got '%s'\n", buf);
         if (size <= recvd + to_recv)
             size = recvd * 2;
             output = (byte *) realloc(output, size);
@@ -132,6 +142,5 @@ int recv_output(int sockfd, byte *buf, byte *output, int &size)
     } while (255 < to_recv);
     output[recvd] = '\0';
 
-    printf("client: received '%s'\n", output);
     return recvd;
 }

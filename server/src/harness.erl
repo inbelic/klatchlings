@@ -97,7 +97,7 @@ do_player_input(From, Input, GID,
                 #state{games = Games} = State) ->
     try
         {ok, Game} = dict:find(GID, Games),
-        case validate_input(From, Input, Game) of
+        case validate_input(From, Game, Input) of
             {valid, forward, Game1, ValidInput} ->
                 gen_server:cast(self(), {send_input, GID, ValidInput}),
                 {noreply, State#state{games = dict:store(GID, Game1, Games)}};
@@ -111,26 +111,28 @@ do_player_input(From, Input, GID,
             {noreply, State}
     end.
 
-validate_input(From, #game{p1 = From} = Game, {order, Order}) ->
+validate_input(From, #game{p1 = From} = Game, {order, OrderStr}) ->
+    Order = encode:decode_range(fun encode:extract_num/1, OrderStr),
     case Game#game.status of
         {ordr, System, empty, empty} ->
             {valid, await, Game#game{status = {ordr, System, Order, empty}}};
         {ordr, System, empty, OpOrder} ->
             %% FIXME: need a deterministic way to order the orderings
             Order = System ++ Order ++ OpOrder,
-            Input = encode_range(Order),
+            Input = encode:encode_range(Order),
             {valid, forward, Game#game{status = awaiting}, Input};
         _ ->
             invalid
     end;
-validate_input(From, #game{p2 = From} = Game, {order, Order}) ->
+validate_input(From, #game{p2 = From} = Game, {order, OrderStr}) ->
+    Order = encode:decode_range(fun encode:extract_num/1, OrderStr),
     case Game#game.status of
         {ordr, System, empty, empty} ->
             {valid, await, Game#game{status = {ordr, System, empty, Order}}};
         {ordr, System, OpOrder, empty} ->
             %% FIXME: need a deterministic way to order the orderings
-            Order = System ++ OpOrder ++ Order,
-            Input = encode_range(Order),
+            TtlOrder = System ++ OpOrder ++ Order,
+            Input = encode:encode_range(TtlOrder),
             {valid, forward, Game#game{status = awaiting}, Input};
         _ ->
             invalid
@@ -145,9 +147,6 @@ validate_input(From, #game{} = Game, {target, Trgt}) ->
     end;
 validate_input(_, _, _) ->
     invalid.
-
-encode_range(Range) ->
-    "[" ++ lists:join(", ", lists:map(fun integer_to_list/1, Range)) ++ "]".
 
 do_tcp(<<"connected">>, State) ->
     io:format("~p~n", [harness_connected]),

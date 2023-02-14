@@ -99,6 +99,7 @@ do_greet(State) ->
 do_input(order, Args, #state{game = Game} = State) ->
     #game{gid = GID, harness = Harness} = Game,
     %% We will then forward to the game harness with the GID prepended
+    io:format("~p: ~p~n", [GID, Args]),
     gen_server:cast(Harness, {player_input, self(), GID, {order, Args}}),
     {noreply, State};
 do_input(target, Args, #state{game = Game} = State) ->
@@ -125,7 +126,8 @@ do_game_req({ordr, MyOrder, OpOrder, SysOrder},
     {noreply, State#state{game = Game1}};
 do_game_req({trgt, Hdr, Range},
             #state{game = Game} = State) ->
-    Output = encode:encode_header(Hdr) ++ encode:encode_range(fun integer_to_list/1, Range),
+    Output = encode:encode_header(Hdr)
+           ++ encode:encode_range(fun integer_to_list/1, Range),
     gen_server:cast(self(), {send_output, <<?TRGT>>, Output}),
     Game1 = Game#game{req_state = {trgt, Range}},
     {noreply, State#state{game = Game1}};
