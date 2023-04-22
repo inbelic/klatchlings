@@ -7,14 +7,13 @@ import Internal.Types
 import Internal.Comms (Comm, requestReorder, requestTargets)
 import Internal.Display (displayState)
 import Internal.Misc (getNextKey)
-import Control.Monad (liftM)
 
 resolveStack :: Comm Game
 resolveStack ch g@(Game stck hist crds) = do
   let gs = peek g
       hdrs = headers gs crds
-  hdrs' <- liftM (map snd)
-         . (=<<) (sequence . map (requestTargets ch))
+  hdrs' <- fmap (map snd)
+         . (=<<) (mapM (requestTargets ch))
          . requestReorder ch
          . map (\hdr -> (hdrOwner gs hdr, hdr)) $ hdrs
   let hist' = write hist
@@ -62,7 +61,7 @@ resolveUnassigned :: Liable -> CardID -> AbilityID -> Guard -> Targets
                       -> Resolves -> Comm Game
 resolveUnassigned lbl cID aID grd trgts rslvs ch game@(Game stck hist crds) = do
   let gs = peek game
-  hdr' <- liftM snd . requestTargets ch
+  hdr' <- fmap snd . requestTargets ch
         . (\hdr -> (hdrOwner gs hdr, hdr))
         . Assigned lbl cID aID grd
         . targetResolves gs cID rslvs $ trgts

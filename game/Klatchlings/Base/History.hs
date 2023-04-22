@@ -44,7 +44,7 @@ searchUntil cond (History (cur, prev))
 searchUntil' :: (Page -> Bool) -> [Page] -> [Page] -> (Bool, [Page])
 searchUntil' _ [] acc = (False, acc)
 searchUntil' cond (pg:pgs) acc
-  = case cond pg of
-      True -> (True, acc)
-      False -> searchUntil' cond pgs $ pg : acc
+  = if cond pg
+       then (True, acc)
+       else searchUntil' cond pgs $ pg : acc
 

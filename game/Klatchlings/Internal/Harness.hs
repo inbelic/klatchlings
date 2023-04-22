@@ -29,7 +29,7 @@ newtype GameID = GameID
 
 process :: String -> Maybe (GameID, String)
 process str =
-  let (gIDStr, respStr) = span ((/=) ':') str
+  let (gIDStr, respStr) = span (':' /=) str
    in case (readMaybe gIDStr, respStr) of
         (Just gID, ':' : resp) -> Just (GameID gID, resp)
         _ -> Nothing

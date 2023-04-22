@@ -42,8 +42,8 @@ moveZone z = Resolve $ \_ tcID gs ->
   let owner = retreive tcID (Attr Owner) . getCS $ gs
       ownersZone
         = within 
-        . refine (Attr Owner) ((==) owner)
-        . refine (Attr Zone) ((==) TopDeck . toEnum)
+        . refine (Attr Owner) (owner ==)
+        . refine (Attr Zone) (fromEnum TopDeck ==)
         . getCS $ gs
       posn = (+ 1) . maximum' . map snd
            . orderBy (Attr Position) ownersZone . getCS $ gs
@@ -60,9 +60,9 @@ orToHand (Resolve r) = Resolve $ \cID tcID gs ->
       owner = toEnum $ retreive tcID (Attr Owner) cs
       mana = retreive (getHero owner cs) (Attr Mana) cs
       cost = retreive tcID (Stat Cost) cs
-   in case mana < cost of
-        True -> resolve (moveZone Hand) cID tcID gs
-        False -> r cID tcID gs
+   in if mana < cost
+         then resolve (moveZone Hand) cID tcID gs
+         else r cID tcID gs
 
 payCost :: Resolve
 payCost = Resolve $ \cID _ gs ->
@@ -81,4 +81,4 @@ doStrike = Resolve $ \cID tcID gs ->
 setAttackFlag :: Resolve
 setAttackFlag = Resolve $ \_ _ gs ->
   let seiging = getSeiging gs
-   in set (AttackFlag) (fromEnum seiging)
+   in set AttackFlag (fromEnum seiging)

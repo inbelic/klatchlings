@@ -68,7 +68,7 @@ toDraw owner _ gs
      in case (topDeck, midDeck, botDeck) of
           ([], [], []) -> []
           ([], [], xs) -> [Given $ head xs]
-          ([], xs, _) -> [Random $ xs]
+          ([], xs, _) -> [Random xs]
           (xs, _, _) -> [Given $ head xs]
 
 validPlays :: Phase -> Targeting
@@ -78,8 +78,8 @@ validPlays p _ gs
         mana = retreive (getHero active cs) (Attr Mana) cs
         hand = within
              . refine (Stat Cost) (mana >)
-             . refine (Attr Owner) ((==) (fromEnum active))
-             . refine (Attr Zone) ((==) (fromEnum Hand))
+             . refine (Attr Owner) (fromEnum active ==)
+             . refine (Attr Zone) (fromEnum Hand ==)
              . getCS $ gs
      in case hand of
           [] -> [Given . CardID $ 0]
@@ -89,28 +89,28 @@ validNoms :: Owner -> Targeting
 validNoms o _ gs
   = let barracks
           = within
-          . refine (Attr Owner) ((==) (fromEnum o))
+          . refine (Attr Owner) (fromEnum o ==)
           . refine (Stat Fatigued) (0 <=)
-          . refine (Attr NominateFlag) ((/=) 1)
-          . refine (Attr Zone) ((==) (fromEnum Barrack))
+          . refine (Attr NominateFlag) (1 /=)
+          . refine (Attr Zone) (fromEnum Barrack ==)
           . getCS $ gs
      in case barracks of
           [] -> [Given . CardID $ 0]
           xs -> [Inquire . (:) (CardID 0) $ xs]
 
 getNominated :: Targeting
-getNominated _ gs
+getNominated _
   = map Given
   . within
-  . refine (Attr NominateFlag) ((==) 1)
+  . refine (Attr NominateFlag) (1 ==)
   . refine (Attr Zone) ((==) Barrack . toEnum)
-  . getCS $ gs
+  . getCS
 
 getZone' :: Zone -> Targeting
-getZone' z _ gs
+getZone' z _
   = map Given
   . getZone z
-  . getCS $ gs
+  . getCS
 
 targetSelf :: Targeting
 targetSelf cID _

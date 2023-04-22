@@ -51,7 +51,7 @@ morningPhase = Ability System OnResolve trg grd trgts rslvs
         . oneOf (inZone MidDeck)
         $ inZone BotDeck
 
-    trgts = convert [0, 0] . combine (toDraw P1) $ (toDraw P2)
+    trgts = convert [0, 0] . combine (toDraw P1) $ toDraw P2
     rslvs = Map.fromList [(TID 0, moveZone Hand)]
 
 play :: Owner -> Phase -> Ability

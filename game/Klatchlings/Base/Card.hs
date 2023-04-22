@@ -88,10 +88,10 @@ viewStatState as = Map.map (Map.map (apply . status) . stats)
   where apply f = f as 0
 
 attrToField :: AttrMap -> FieldMap
-attrToField = Map.foldrWithKey (\k v m -> Map.insert (Attr k) v m) Map.empty
+attrToField = Map.foldrWithKey (Map.insert . Attr) Map.empty
 
 statToField :: StatMap' -> FieldMap
-statToField = Map.foldrWithKey (\k v m -> Map.insert (Stat k) v m) Map.empty
+statToField = Map.foldrWithKey (Map.insert . Stat) Map.empty
 
 headers :: GameState -> Cards -> [Header]
 headers gs = Map.foldrWithKey f []

@@ -58,18 +58,18 @@ orderBy fld cIDs
   = sortOn snd . Map.foldrWithKey f [] . Map.map (Map.lookup fld)
   where f _ Nothing = id
         f cID (Just x)
-          | elem cID cIDs = (:) (cID, x)
+          | cID `elem` cIDs = (:) (cID, x)
           | otherwise = id
 
 getZone :: Zone -> CardState -> [CardID]
 getZone z = within
-          . refine (Attr Zone) ((==) (fromEnum z))
+          . refine (Attr Zone) (fromEnum z ==)
 
 getOwnersZone :: Owner -> Zone -> CardState -> [CardID]
 getOwnersZone o z
   = within
-  . refine (Attr Owner) ((==) (fromEnum o))
-  . refine (Attr Zone) ((==) (fromEnum z))
+  . refine (Attr Owner) (fromEnum o ==)
+  . refine (Attr Zone) (fromEnum z ==)
 
 getHero :: Owner -> CardState -> CardID
 getHero o = head . getOwnersZone o Throne

@@ -14,7 +14,6 @@ import Internal.Types
 import Base.Fields (Owner)
 import Data.List (sort, concatMap)
 import Text.Read (readMaybe)
-import Control.Monad (liftM)
 import Control.Concurrent.Chan (Chan, readChan, writeChan)
 
 type Comm a = Chan String -> a -> IO a
@@ -38,7 +37,7 @@ requestReorder ch hdrs = do
 reorder :: [a] -> [Int] -> Maybe [a]
 reorder elems idxs
   | uniqueSpan idxs && (length idxs == length elems)
-    = Just . foldr (reorder' elems) [] . map (flip (-) 1) $ idxs
+    = Just . foldr (reorder' elems . flip (-) 1) [] $ idxs
   | otherwise = Nothing
 
 reorder' :: [a] -> Int -> [a] -> [a]
@@ -52,7 +51,7 @@ uniqueSpan idxs = (==) [1..l] . sort $ idxs
 
 requestTargets :: Comm (Owner, Header)
 requestTargets ch (o, hdr@(Assigned _ cID aID grd trgts))
-  = liftM ((,) o . Targeted cID aID grd)
+  = fmap ((,) o . Targeted cID aID grd)
   . foldr f (return [])
   . reverse $ trgts
     where f x = (=<<) (requestTarget ch o hdr x)
@@ -79,6 +78,6 @@ requestTarget ch o hdr (rslv, trgt) acc
           (Just cID) -> return $ (rslv, Just . CardID $ cID) : acc
 
 validTarget :: [CardID] -> Int -> Maybe Int
-validTarget xs x = case elem x . map cardID $ xs of
-                     True -> Just x
-                     False -> Nothing
+validTarget xs x = if elem x . map cardID $ xs
+                      then Just x
+                      else Nothing

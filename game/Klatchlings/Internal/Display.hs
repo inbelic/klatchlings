@@ -27,8 +27,8 @@ encodeDiff old (GameState _ _ new)
   ++ encode allySchema p2Diff ++ encode enemySchema p1Diff
     where
       diff = compDiff old new
-      p1Diff = refine (Attr Owner) ((==) (fromEnum P1)) diff
-      p2Diff = refine (Attr Owner) ((==) (fromEnum P2)) diff
+      p1Diff = refine (Attr Owner) (fromEnum P1 ==) diff
+      p2Diff = refine (Attr Owner) (fromEnum P2 ==) diff
 
 newtype Schema = Schema
   { schema :: [(Zone, [Field])]
@@ -65,18 +65,18 @@ encode (Schema flts) cs = foldr (f cs) "" flts
   where
     f cs (z, flds) acc
         = case Map.foldrWithKey (g flds) ""
-              . refine (Attr Zone) ((==) (fromEnum z)) $ cs
+              . refine (Attr Zone) (fromEnum z ==) $ cs
           of
             [] -> acc
             valStr ->
               show (fromEnum z) ++ ": [" ++ valStr ++ "], " ++ acc
 
-    g flds cID fm acc = (encodeCard flds cID fm) ++ acc
+    g flds cID fm acc = encodeCard flds cID fm ++ acc
 
 encodeCard :: [Field] -> CardID -> FieldMap -> String
 encodeCard toInclude cID fm
   = frnt ++ Map.foldrWithKey f "} " fm'
-  where fm' = Map.filterWithKey (\fld _ -> elem fld toInclude) fm
+  where fm' = Map.filterWithKey (\fld _ -> fld `elem` toInclude) fm
         frnt = show cID ++ " {"
 
         f fld x acc = show fld ++ " => " ++ show x ++ ", " ++ acc
@@ -90,11 +90,10 @@ compDiff old = Map.foldrWithKey (compDiff' old) Map.empty
           (_, Nothing) -> new
           (Nothing, _) -> Map.insert cID fm new
           (Just oldFM, curZone) ->
-            case (==) curZone . Map.lookup (Attr Zone) $ oldFM of
-              False -> Map.insert cID fm new
-              True ->
-                let fm' = Map.filterWithKey (takeAltered oldFM) fm
-                 in Map.insert cID fm' new
+            if (==) curZone . Map.lookup (Attr Zone) $ oldFM
+               then let fm' = Map.filterWithKey (takeAltered oldFM) fm
+                     in Map.insert cID fm' new
+               else Map.insert cID fm new
 
     takeAltered :: FieldMap -> Field -> Int -> Bool
     takeAltered oldFM fld x

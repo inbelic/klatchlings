@@ -14,7 +14,6 @@ import Logic.Logic (cards)
 
 import Control.Concurrent.Chan
 import Control.Concurrent (forkIO)
-import Control.Monad (liftM)
 
 import qualified Data.Map as Map
 
