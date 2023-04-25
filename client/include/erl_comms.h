@@ -1,6 +1,7 @@
 #ifndef _ERL_COMMS_HEADER_
 #define _ERL_COMMS_HEADER_
 
+// Networking imports
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,16 +14,22 @@
 
 #include <arpa/inet.h>
 
+// Custom imports
 #include "commands.h"
 
-#define MAXDATASIZE 256
+// C++ standard imports
+#include <thread>
+#include <atomic>
+#include <condition_variable>
+#include <vector>
+
+#define MAXDATASIZE 1024
 
 typedef char byte;
 
 int start_conn(const char *host, const char *port, int &sockfd);
 
-int send_input(int sockfd, const byte *input);
-
-int recv_output(int sockfd, byte *response, byte *output, int &size);
+void stream_recv(int sockfd, Request **req, bool *running,
+        std::condition_variable *cv, std::mutex *cv_m);
 
 #endif

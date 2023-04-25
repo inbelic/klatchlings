@@ -1,5 +1,5 @@
 LIBS=-lsfml-graphics -lsfml-window -lsfml-system
-CXX := g++
+CXX := g++ -Wall
 
 _OBJS=erl_comms.o main.o
 OBJS= $(patsubst %,$(ODIR)/%,$(_OBJS))
@@ -23,6 +23,10 @@ $(OUT): $(OBJS)
 run: build
 	cd build; \
 	./klatch-ui
+
+dbg: build
+	cd build; \
+	valgrind ./klatch-ui
 
 clean:
 	rm -f $(OUT) $(ODIR)/*.o

@@ -7,16 +7,25 @@
 
 #define PORT "4560"
 
+typedef char byte;
+
 enum SERVER_RECV_ERROR { OKAY, BAD_HEADER, BAD_COMMAND, BAD_ARGS };
 
-enum COMMANDS {
+enum COMMAND {
     ORDER, TARGET, // Game commands
-    PLAY, QUIT     // Menu commands
+    PLAY, QUIT,     // Menu commands
+    UNKNOWN
 };
 
 enum REQUEST {
     VIEW, ORDR, TRGT, RAND
 };
 
+struct Request
+{
+    COMMAND cmd;
+    byte *args;
+    int len;
+};
 
 #endif

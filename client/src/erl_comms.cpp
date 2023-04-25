@@ -1,5 +1,6 @@
 #include "../include/erl_comms.h"
 
+// Address collection taken from Beej's guide to socket programming
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
@@ -9,6 +10,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+// Starting a connection taken from Beej's guide to socket programming
 int start_conn(const char *host, const char *port, int &sockfd)
 {
     struct addrinfo hints, *servinfo, *p;
@@ -55,92 +57,58 @@ int start_conn(const char *host, const char *port, int &sockfd)
     return 0;
 }
 
-
-// send to_send bytes of buf or die trying
-int send_all(int sockfd, int to_send, const byte *buf)
+void mk_request(Request **req, const std::vector<byte> bytes)
 {
-    int sent, ttl_sent = 0;
-    while (0 < to_send) {
-        sent = send(sockfd, buf + ttl_sent, to_send, 0);
-        if (sent == -1)
-            return -1;
-        ttl_sent += sent;
-        to_send -= sent;
-    }
+    // First clean up the old request
+    delete [] (*req)->args;
+    delete *req;
 
-    return ttl_sent;
-}
+    // Then determine the cmd byte
+    byte cmd_byte = bytes.front();
+    COMMAND cmd;
+    if (3 < cmd_byte) cmd = UNKNOWN;
+    else cmd = static_cast<COMMAND>(cmd_byte);
 
-// send the desired number of bytes to send then send
-// that many bytes of buf
-int send_buf(int sockfd, int to_send, const byte *buf)
-{
-    byte size = 0xff & to_send;
-
-    if (send(sockfd, &size, 1, 0) != 1)
-        return -1;
-
-    if (size == 0) return 0;
-    return send_all(sockfd, to_send, buf);
-}
-
-// compute the number of bytes of the input and then send it
-// in the required chunks
-int send_input(int sockfd, const byte *input)
-{
-    int to_send = strlen(input);
-    if (to_send == 0)
-        return 0;
-
-    int sent = 0;
+    // And then allocate and store the incoming args
+    int len = bytes.size();
+    byte *args = new byte[len + 1];
+    for (int i = 0; i < len; i++)
+        args[i] = bytes[i];
+    args[len] = '\0';
+   
+    // 'Publish' the changes that will then awaken the other thread
+    Request *new_req = new Request();
+    new_req->cmd = cmd;
+    new_req->args = args;
+    new_req->len = len;
     
-    while (255 < to_send) {
-        send_buf(sockfd, 255, input + sent);
-        to_send -= 255;
-        sent += 255;
-    }
-    to_send -= send_buf(sockfd, to_send, input + sent);
-
-    int ack;
-    byte buf[1];
-    ack = recv(sockfd, buf, 1, 0);
-
-    if (to_send != 0 || ack != 1)
-        return -1;
-
-    return buf[0];
+    *req = new_req;
 }
 
-int mod256(int x)
+void stream_recv(int sockfd, Request **req, bool *running,
+        std::condition_variable *cv, std::mutex *cv_m)
 {
-    if (x < 0) {
-        return 256 + x;
+    byte buf[MAXDATASIZE];
+    std::vector<byte> bytes;
+    int recvd, i;
+
+    while (*running) {
+        recvd = recv(sockfd, buf, MAXDATASIZE, 0);
+        if (recvd <= 0) {
+            std::lock_guard lk(*cv_m);
+            *running = false;
+            cv->notify_one();
+            return;
+        }
+        for (i = 0; i < recvd; i++) {
+            const byte &c = buf[i];
+            bytes.push_back(c);
+            if (c == '\0') {
+                std::lock_guard lk(*cv_m);
+                mk_request(req, bytes);
+                bytes.erase(bytes.begin(), bytes.end());
+                cv->notify_one();
+            }
+        }
     }
-    return x;
-}
-
-int recv_output(int sockfd, byte *buf, byte *output, int &size)
-{
-    int to_recv;
-    int recvd = 0;
-    do {
-        to_recv = recv(sockfd, buf, 1, 0);
-        if (to_recv != 1)
-            return -1;
-
-        to_recv = mod256(buf[0]);
-
-        if (to_recv == 0)
-            break;
-        if (recv(sockfd, buf, to_recv, 0) != to_recv)
-            return -1;
-        if (size <= recvd + to_recv)
-            size = recvd * 2;
-            output = (byte *) realloc(output, size);
-        memcpy((void *) (output + recvd), (const void *)buf, to_recv);
-        recvd += to_recv;
-    } while (255 < to_recv);
-    output[recvd] = '\0';
-
-    return recvd;
 }
